@@ -197,15 +197,14 @@
       white-space: nowrap;
     }
 
-    .canvasWrap {
+    .chartWrap {
       min-height: 0;
       position: relative;
     }
 
-    canvas {
+    #chart {
       width: 100%;
       height: 100%;
-      display: block;
     }
 
     @media (max-width: 1180px) {
@@ -247,13 +246,14 @@
           <div class="legend" id="legend"></div>
           <div class="window" id="window">Window --</div>
         </div>
-        <div class="canvasWrap">
-          <canvas id="chart"></canvas>
+        <div class="chartWrap">
+          <div id="chart"></div>
         </div>
       </section>
     </section>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   <script>
     const series = [
       { key: "bybit", name: "Bybit", color: "#cf4a7a" },
@@ -264,33 +264,30 @@
       { key: "combined", name: "Combined", color: "#f08c00", width: 3 },
     ];
 
-    const chartWindowMs = 20_000;
+    const chartWindowMs = 30_000;
+    const chartXAxisIntervalMs = 6_000;
+    const chartRenderIntervalMs = 50;
     const maxChartPoints = 12_000;
     const points = [];
     let latest = null;
     let socket = null;
     let reconnectTimer = null;
-    let needsRender = true;
+    let chartNeedsUpdate = false;
+    let chartTimer = null;
+    let lastChartRenderAt = 0;
 
     const statusEl = document.getElementById("status");
     const summaryEl = document.getElementById("summary");
     const legendEl = document.getElementById("legend");
     const windowEl = document.getElementById("window");
-    const canvas = document.getElementById("chart");
-    const ctx = canvas.getContext("2d");
+    const chartEl = document.getElementById("chart");
+    const chart = echarts.init(chartEl, null, { renderer: "canvas" });
 
     const priceFormat = new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    });
-
-    const compactPriceFormat = new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
     });
 
     function isNumber(value) {
@@ -401,20 +398,7 @@
       }
 
       updateSummary(snapshot);
-      needsRender = true;
-    }
-
-    function resizeCanvas() {
-      const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      const width = Math.max(1, Math.floor(rect.width * dpr));
-      const height = Math.max(1, Math.floor(rect.height * dpr));
-
-      if (canvas.width !== width || canvas.height !== height) {
-        canvas.width = width;
-        canvas.height = height;
-        needsRender = true;
-      }
+      scheduleChartUpdate();
     }
 
     function paddedRange(min, max) {
@@ -426,148 +410,7 @@
       ];
     }
 
-    function drawGrid(plot, minPrice, maxPrice) {
-      ctx.save();
-      ctx.strokeStyle = "#e6e9ee";
-      ctx.fillStyle = "#6d7683";
-      ctx.lineWidth = 1;
-      ctx.font = "12px ui-sans-serif, system-ui, sans-serif";
-      ctx.textAlign = "left";
-      ctx.textBaseline = "middle";
-
-      const step = 10;
-      const first = Math.ceil(minPrice / step) * step;
-      for (let value = first; value <= maxPrice; value += step) {
-        const y = plot.top + (maxPrice - value) / (maxPrice - minPrice) * plot.height;
-        ctx.beginPath();
-        ctx.moveTo(plot.left, y);
-        ctx.lineTo(plot.left + plot.width, y);
-        ctx.stroke();
-        ctx.fillText(compactPriceFormat.format(value), plot.left + plot.width + 12, y);
-      }
-
-      if (latest) {
-        ctx.textAlign = "center";
-        ctx.textBaseline = "top";
-        const endMs = latest.timestamp;
-        const startMs = endMs - chartWindowMs;
-        for (let i = 0; i <= 5; i += 1) {
-          const x = plot.left + (plot.width * i / 5);
-          const seconds = Math.floor((startMs + (chartWindowMs * i / 5)) / 1000);
-          ctx.fillText(timeLabel(seconds), x, plot.top + plot.height + 12);
-        }
-      }
-
-      ctx.restore();
-    }
-
-    function drawBaseline(plot, minPrice, maxPrice) {
-      const base = latest?.baseline;
-      if (!isNumber(base)) {
-        return;
-      }
-
-      const y = plot.top + (maxPrice - base) / (maxPrice - minPrice) * plot.height;
-      ctx.save();
-      ctx.strokeStyle = "#f08c00";
-      ctx.globalAlpha = 0.45;
-      ctx.setLineDash([8, 8]);
-      ctx.beginPath();
-      ctx.moveTo(plot.left, y);
-      ctx.lineTo(plot.left + plot.width, y);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    function drawSeries(plot, minPrice, maxPrice) {
-      if (!latest || points.length < 2) {
-        return;
-      }
-
-      const endMs = latest.timestamp;
-      const startMs = endMs - chartWindowMs;
-      const spanMs = endMs - startMs;
-
-      for (const item of series) {
-        ctx.save();
-        ctx.strokeStyle = item.color;
-        ctx.lineWidth = item.width || 1.8;
-        ctx.lineJoin = "round";
-        ctx.lineCap = "round";
-
-        const path = [];
-        for (const point of points) {
-          const price = exPrice(point, item.key);
-          if (!isNumber(price)) {
-            continue;
-          }
-
-          const x = plot.left + ((point.timestamp - startMs) / spanMs) * plot.width;
-          const y = plot.top + (maxPrice - price) / (maxPrice - minPrice) * plot.height;
-          path.push({ x, y });
-        }
-
-        if (path.length >= 2) {
-          ctx.beginPath();
-          ctx.moveTo(path[0].x, path[0].y);
-
-          if (path.length === 2) {
-            ctx.lineTo(path[1].x, path[1].y);
-          } else {
-            for (let i = 0; i < path.length - 1; i += 1) {
-              const p0 = path[Math.max(0, i - 1)];
-              const p1 = path[i];
-              const p2 = path[i + 1];
-              const p3 = path[Math.min(path.length - 1, i + 2)];
-              const cp1x = p1.x + (p2.x - p0.x) / 6;
-              const cp1y = p1.y + (p2.y - p0.y) / 6;
-              const cp2x = p2.x - (p3.x - p1.x) / 6;
-              const cp2y = p2.y - (p3.y - p1.y) / 6;
-              ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
-            }
-          }
-
-          ctx.stroke();
-        }
-
-        ctx.restore();
-      }
-    }
-
-    function render() {
-      resizeCanvas();
-
-      if (!needsRender) {
-        requestAnimationFrame(render);
-        return;
-      }
-
-      needsRender = false;
-      const dpr = window.devicePixelRatio || 1;
-      const width = canvas.width;
-      const height = canvas.height;
-      ctx.clearRect(0, 0, width, height);
-      ctx.save();
-      ctx.scale(dpr, dpr);
-
-      const cssWidth = width / dpr;
-      const cssHeight = height / dpr;
-      const plot = {
-        left: 18,
-        top: 18,
-        width: Math.max(100, cssWidth - 110),
-        height: Math.max(120, cssHeight - 58),
-      };
-
-      if (!latest || points.length === 0) {
-        ctx.fillStyle = "#6d7683";
-        ctx.font = "14px ui-sans-serif, system-ui, sans-serif";
-        ctx.fillText("Waiting for exchange feeds", 18, 28);
-        ctx.restore();
-        requestAnimationFrame(render);
-        return;
-      }
-
+    function priceExtent() {
       let minValue = Infinity;
       let maxValue = -Infinity;
       for (const point of points) {
@@ -581,17 +424,172 @@
       }
 
       if (!Number.isFinite(minValue) || !Number.isFinite(maxValue)) {
-        ctx.restore();
-        requestAnimationFrame(render);
+        return null;
+      }
+
+      return paddedRange(minValue, maxValue);
+    }
+
+    function seriesData(item) {
+      return points
+        .map((point) => {
+          const price = exPrice(point, item.key);
+          return isNumber(price) ? [point.timestamp, price] : null;
+        })
+        .filter(Boolean);
+    }
+
+    function scheduleChartUpdate() {
+      chartNeedsUpdate = true;
+      if (chartTimer !== null) {
+        return;
+      }
+      const elapsed = Date.now() - lastChartRenderAt;
+      const delay = Math.max(0, chartRenderIntervalMs - elapsed);
+      chartTimer = setTimeout(() => {
+        chartTimer = null;
+        if (chartNeedsUpdate) {
+          chartNeedsUpdate = false;
+          lastChartRenderAt = Date.now();
+          updateChart();
+        }
+      }, delay);
+    }
+
+    function chartAxisEnd() {
+      return Math.floor(Date.now() / chartRenderIntervalMs) * chartRenderIntervalMs;
+    }
+
+    function xAxisGraphics(startMs, endMs) {
+      const chartWidth = chartEl.clientWidth;
+      const chartHeight = chartEl.clientHeight;
+      const gridLeft = 18;
+      const gridRight = 78;
+      const gridBottom = 36;
+      const plotWidth = Math.max(1, chartWidth - gridLeft - gridRight);
+      const plotBottom = chartHeight - gridBottom;
+      const firstTick = Math.ceil(startMs / chartXAxisIntervalMs) * chartXAxisIntervalMs;
+      const graphics = [];
+
+      for (let tick = firstTick; tick <= endMs; tick += chartXAxisIntervalMs) {
+        const x = gridLeft + ((tick - startMs) / chartWindowMs) * plotWidth;
+        graphics.push({
+          type: "line",
+          silent: true,
+          shape: { x1: x, y1: plotBottom, x2: x, y2: plotBottom + 4 },
+          style: { stroke: "#6d7683", lineWidth: 1, opacity: 0.45 },
+        });
+        graphics.push({
+          type: "text",
+          silent: true,
+          x,
+          y: plotBottom + 13,
+          style: {
+            text: timeLabel(tick / 1000),
+            fill: "#6d7683",
+            font: "12px ui-sans-serif, system-ui, sans-serif",
+            textAlign: "center",
+            textVerticalAlign: "top",
+          },
+        });
+      }
+
+      return graphics;
+    }
+
+    function updateChart() {
+      if (!latest || points.length === 0) {
         return;
       }
 
-      const [minPrice, maxPrice] = paddedRange(minValue, maxValue);
-      drawGrid(plot, minPrice, maxPrice);
-      drawBaseline(plot, minPrice, maxPrice);
-      drawSeries(plot, minPrice, maxPrice);
-      ctx.restore();
-      requestAnimationFrame(render);
+      const range = priceExtent();
+      if (!range) {
+        return;
+      }
+
+      const endMs = chartAxisEnd();
+      const startMs = endMs - chartWindowMs;
+      const [minPrice, maxPrice] = range;
+      const baseline = latest.baseline;
+
+      chart.setOption({
+        animation: false,
+        graphic: xAxisGraphics(startMs, endMs),
+        grid: {
+          left: 18,
+          right: 78,
+          top: 18,
+          bottom: 36,
+          containLabel: false,
+        },
+        tooltip: {
+          trigger: "axis",
+          confine: true,
+          valueFormatter: (value) => formatPrice(value),
+          axisPointer: {
+            type: "line",
+            lineStyle: { color: "#9aa3ad", width: 1 },
+          },
+        },
+        xAxis: {
+          type: "value",
+          min: startMs,
+          max: endMs,
+          interval: chartXAxisIntervalMs,
+          minInterval: chartXAxisIntervalMs,
+          maxInterval: chartXAxisIntervalMs,
+          axisLabel: {
+            show: false,
+          },
+          axisLine: { show: false },
+          axisTick: { show: false },
+          splitLine: { show: false },
+        },
+        yAxis: {
+          type: "value",
+          position: "right",
+          min: minPrice,
+          max: maxPrice,
+          interval: 10,
+          scale: true,
+          axisLabel: {
+            color: "#6d7683",
+            formatter: (value) => "$" + value.toLocaleString("en-US", { maximumFractionDigits: 0 }),
+          },
+          axisLine: { show: false },
+          axisTick: { show: false },
+          splitLine: {
+            lineStyle: { color: "#e6e9ee", width: 1 },
+          },
+        },
+        series: series.map((item) => ({
+          name: item.name,
+          type: "line",
+          data: seriesData(item),
+          smooth: 0.35,
+          smoothMonotone: "x",
+          showSymbol: false,
+          connectNulls: false,
+          lineStyle: {
+            color: item.color,
+            width: item.width || 1.8,
+          },
+          itemStyle: { color: item.color },
+          emphasis: { focus: "series" },
+          markLine: item.key === "combined" && isNumber(baseline) ? {
+            silent: true,
+            symbol: "none",
+            lineStyle: {
+              color: item.color,
+              opacity: 0.45,
+              type: "dashed",
+              width: 1.5,
+            },
+            label: { show: false },
+            data: [{ yAxis: baseline }],
+          } : undefined,
+        })),
+      }, { notMerge: true, lazyUpdate: true });
     }
 
     function connect() {
@@ -621,9 +619,25 @@
     renderStaticUi();
     connect();
     window.addEventListener("resize", () => {
-      needsRender = true;
+      chart.resize();
+      scheduleChartUpdate();
     });
-    requestAnimationFrame(render);
+    chart.setOption({
+      animation: false,
+      grid: { left: 18, right: 78, top: 18, bottom: 36 },
+      xAxis: { type: "value", axisLine: { show: false }, axisTick: { show: false } },
+      yAxis: { type: "value", position: "right", axisLine: { show: false }, axisTick: { show: false } },
+      graphic: {
+        type: "text",
+        left: 18,
+        top: 18,
+        style: {
+          text: "Waiting for exchange feeds",
+          fill: "#6d7683",
+          font: "14px ui-sans-serif, system-ui, sans-serif",
+        },
+      },
+    });
   </script>
 </body>
 </html>
