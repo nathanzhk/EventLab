@@ -11,7 +11,9 @@ use tokio::{
 
 use super::exchanges::{FeedUpdate, Quote, now_unix_ms};
 
-const MAX_DELAY_MS: f64 = 200.0;
+const UPDATE_DELAY_MS: f64 = 300.0;
+const DROP_DELAY_MS: f64 = 500.0;
+const RESTORE_DELAY_MS: f64 = 250.0;
 const WINDOW_SECONDS: u64 = 300;
 const EXCHANGES: [WeightedExchange; 5] = [
     WeightedExchange {
@@ -57,16 +59,51 @@ struct WeightedExchange {
 
 #[derive(Default, Debug)]
 struct LatestQuotes {
-    quotes: HashMap<&'static str, Quote>,
+    accepted_quotes: HashMap<&'static str, Quote>,
+    raw_quotes: HashMap<&'static str, Quote>,
+    enabled: HashMap<&'static str, bool>,
 }
 
 impl LatestQuotes {
     fn update(&mut self, update: FeedUpdate) {
-        self.quotes.insert(update.exchange, update.quote);
+        let exchange = update.exchange;
+        let quote = update.quote;
+        let delay_ms = quote.delay_ms;
+        let was_enabled = self.enabled.get(exchange).copied().unwrap_or(false);
+        let has_accepted_quote = self.accepted_quotes.contains_key(exchange);
+
+        self.raw_quotes.insert(exchange, quote.clone());
+
+        match delay_ms {
+            Some(delay_ms) if was_enabled && delay_ms > DROP_DELAY_MS => {
+                self.enabled.insert(exchange, false);
+            }
+            Some(delay_ms) if was_enabled && delay_ms <= UPDATE_DELAY_MS => {
+                self.accepted_quotes.insert(exchange, quote);
+                self.enabled.insert(exchange, true);
+            }
+            Some(_) if was_enabled => {
+                self.enabled.insert(exchange, true);
+            }
+            Some(delay_ms)
+                if delay_ms <= RESTORE_DELAY_MS
+                    || (!has_accepted_quote && delay_ms <= UPDATE_DELAY_MS) =>
+            {
+                self.accepted_quotes.insert(exchange, quote);
+                self.enabled.insert(exchange, true);
+            }
+            _ => {
+                self.enabled.insert(exchange, false);
+            }
+        }
     }
 
     fn get(&self, exchange: &str) -> Option<&Quote> {
-        self.quotes.get(exchange)
+        self.raw_quotes.get(exchange)
+    }
+
+    fn accepted_quote(&self, exchange: &str) -> Option<&Quote> {
+        self.accepted_quotes.get(exchange)
     }
 
     fn composite_price(&self) -> Option<f64> {
@@ -85,10 +122,12 @@ impl LatestQuotes {
     }
 
     fn eligible_quote(&self, exchange: &str) -> Option<&Quote> {
-        let quote = self.get(exchange)?;
-        let delay_ms = quote.delay_ms?;
-
-        (delay_ms <= MAX_DELAY_MS).then_some(quote)
+        self.enabled
+            .get(exchange)
+            .copied()
+            .unwrap_or(false)
+            .then(|| self.accepted_quote(exchange))
+            .flatten()
     }
 
     fn log_line(&self, local_timestamp_ms: f64) -> String {
