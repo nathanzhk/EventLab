@@ -29,7 +29,7 @@ export interface FeedUpdate {
 export interface ExchangeFeed {
   readonly name: ExchangeName;
   readonly url: string;
-  subscriptions(): Record<string, unknown>;
+  subscribe(): Record<string, unknown>;
   heartbeatIntervalMs?(): number | null;
   heartbeatMessage?(): string | null;
   parseMessage(message: Record<string, unknown>, recvTsMs: number): Quote | null;

@@ -5,7 +5,7 @@ export class Bybit implements ExchangeFeed {
   readonly name = "bybit";
   readonly url = "wss://stream.bybit.com/v5/public/spot";
 
-  subscriptions(): Record<string, unknown> {
+  subscribe(): Record<string, unknown> {
     return {
       op: "subscribe",
       args: ["orderbook.1.BTCUSDT"],

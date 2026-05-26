@@ -5,7 +5,7 @@ export class Coinbase implements ExchangeFeed {
   readonly name = "coinbase";
   readonly url = "wss://ws-feed.exchange.coinbase.com";
 
-  subscriptions(): Record<string, unknown> {
+  subscribe(): Record<string, unknown> {
     return {
       type: "subscribe",
       channels: ["ticker"],

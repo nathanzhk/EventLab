@@ -5,7 +5,7 @@ export class Bitstamp implements ExchangeFeed {
   readonly name = "bitstamp";
   readonly url = "wss://ws.bitstamp.net";
 
-  subscriptions(): Record<string, unknown> {
+  subscribe(): Record<string, unknown> {
     return {
       event: "bts:subscribe",
       data: { channel: "order_book_btcusd" },

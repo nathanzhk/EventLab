@@ -5,7 +5,7 @@ export class Gemini implements ExchangeFeed {
   readonly name = "gemini";
   readonly url = "wss://ws.gemini.com";
 
-  subscriptions(): Record<string, unknown> {
+  subscribe(): Record<string, unknown> {
     return {
       method: "subscribe",
       params: ["btcusd@bookTicker"],

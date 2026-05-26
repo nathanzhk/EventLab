@@ -5,7 +5,7 @@ export class Binance implements ExchangeFeed {
   readonly name = "binance";
   readonly url = "wss://stream.binance.com:9443/ws/btcusdt@bookTicker";
 
-  subscriptions(): Record<string, unknown> {
+  subscribe(): Record<string, unknown> {
     return {};
   }
 
