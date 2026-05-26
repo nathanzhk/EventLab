@@ -30,19 +30,13 @@ export interface FeedUpdate {
   quote: Quote;
 }
 
-export type FeedEvent =
-  | { type: "quote"; quote: Quote }
-  | { type: "info"; message: string }
-  | { type: "error"; message: string }
-  | { type: "ignore" };
-
 export interface ExchangeFeed {
   readonly name: ExchangeName;
   readonly url: string;
   subscriptions(): string[];
   heartbeatIntervalMs?(): number | null;
   heartbeatMessage?(): string | null;
-  handleText(raw: string, receivedAtMs: number): FeedEvent;
+  handleText(raw: string, receivedAtMs: number): Quote | null;
 }
 
 export function nowUnixMs(): number {

@@ -1,4 +1,4 @@
-import type { ExchangeFeed, FeedEvent } from "../types.js";
+import type { ExchangeFeed } from "../types.js";
 import { firstString, parseJsonRecord, parseNumberText, Quote } from "../types.js";
 
 export class Bybit implements ExchangeFeed {
@@ -24,27 +24,17 @@ export class Bybit implements ExchangeFeed {
     return JSON.stringify({ op: "ping" });
   }
 
-  handleText(raw: string, receivedAtMs: number): FeedEvent {
+  handleText(raw: string, receivedAtMs: number): Quote | null {
     const msg = parseJsonRecord(raw);
     if (msg === null) {
-      return { type: "error", message: "bybit failed to parse message" };
+      return null;
     }
 
     if (msg.topic === this.topic) {
-      const quote = parseOrderbookTop(msg, receivedAtMs);
-      return quote === null ? { type: "ignore" } : { type: "quote", quote };
+      return parseOrderbookTop(msg, receivedAtMs);
     }
 
-    if (msg.op === "subscribe" && msg.success === false) {
-      const retMsg = typeof msg.ret_msg === "string" ? msg.ret_msg : "unknown error";
-      return { type: "error", message: `bybit subscribe error: ${retMsg}` };
-    }
-
-    if (msg.op === "pong" || msg.ret_msg === "pong") {
-      return { type: "ignore" };
-    }
-
-    return { type: "ignore" };
+    return null;
   }
 }
 

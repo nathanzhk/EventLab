@@ -1,4 +1,4 @@
-import type { ExchangeFeed, FeedEvent } from "../types.js";
+import type { ExchangeFeed } from "../types.js";
 import { parseJsonRecord, parseNumberText, Quote } from "../types.js";
 
 export class Gemini implements ExchangeFeed {
@@ -20,22 +20,17 @@ export class Gemini implements ExchangeFeed {
     ];
   }
 
-  handleText(raw: string, receivedAtMs: number): FeedEvent {
+  handleText(raw: string, receivedAtMs: number): Quote | null {
     const msg = parseJsonRecord(raw);
     if (msg === null) {
-      return { type: "error", message: "gemini failed to parse message" };
+      return null;
     }
 
     if (msg.s === this.symbol && msg.b !== undefined && msg.a !== undefined) {
-      const quote = parseBookTicker(msg, receivedAtMs);
-      return quote === null ? { type: "ignore" } : { type: "quote", quote };
+      return parseBookTicker(msg, receivedAtMs);
     }
 
-    if (msg.error !== undefined) {
-      return { type: "error", message: `gemini error: ${JSON.stringify(msg.error)}` };
-    }
-
-    return { type: "ignore" };
+    return null;
   }
 }
 

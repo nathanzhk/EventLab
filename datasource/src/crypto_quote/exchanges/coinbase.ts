@@ -1,4 +1,4 @@
-import type { ExchangeFeed, FeedEvent } from "../types.js";
+import type { ExchangeFeed } from "../types.js";
 import { parseJsonRecord, parseNumberText, Quote } from "../types.js";
 
 export class Coinbase implements ExchangeFeed {
@@ -17,23 +17,17 @@ export class Coinbase implements ExchangeFeed {
     ];
   }
 
-  handleText(raw: string, receivedAtMs: number): FeedEvent {
+  handleText(raw: string, receivedAtMs: number): Quote | null {
     const msg = parseJsonRecord(raw);
     if (msg === null || typeof msg.type !== "string") {
-      return { type: "error", message: "coinbase failed to parse message" };
+      return null;
     }
 
     if (msg.type === "ticker" && msg.product_id === this.productId) {
-      const quote = parseTicker(msg, receivedAtMs);
-      return quote === null ? { type: "ignore" } : { type: "quote", quote };
+      return parseTicker(msg, receivedAtMs);
     }
 
-    if (msg.type === "error") {
-      const message = typeof msg.message === "string" ? msg.message : "unknown error";
-      return { type: "error", message: `coinbase error: ${message}` };
-    }
-
-    return { type: "ignore" };
+    return null;
   }
 }
 

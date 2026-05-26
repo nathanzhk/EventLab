@@ -1,4 +1,4 @@
-import type { ExchangeFeed, FeedEvent } from "../types.js";
+import type { ExchangeFeed } from "../types.js";
 import { firstString, isRecord, parseJsonRecord, parseNumberText, Quote } from "../types.js";
 
 export class Bitstamp implements ExchangeFeed {
@@ -16,26 +16,17 @@ export class Bitstamp implements ExchangeFeed {
     ];
   }
 
-  handleText(raw: string, receivedAtMs: number): FeedEvent {
+  handleText(raw: string, receivedAtMs: number): Quote | null {
     const msg = parseJsonRecord(raw);
     if (msg === null) {
-      return { type: "error", message: "bitstamp failed to parse message" };
+      return null;
     }
 
     if (msg.event === "data" && msg.channel === this.channel) {
-      const quote = isRecord(msg.data) ? parseOrderBook(msg.data, receivedAtMs) : null;
-      return quote === null ? { type: "ignore" } : { type: "quote", quote };
+      return isRecord(msg.data) ? parseOrderBook(msg.data, receivedAtMs) : null;
     }
 
-    if (msg.event === "bts:subscription_succeeded") {
-      return { type: "info", message: `bitstamp subscription succeeded ${this.channel}` };
-    }
-
-    if (msg.event === "bts:error") {
-      return { type: "error", message: `bitstamp error: ${raw}` };
-    }
-
-    return { type: "ignore" };
+    return null;
   }
 }
 

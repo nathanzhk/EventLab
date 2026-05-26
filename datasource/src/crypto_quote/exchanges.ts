@@ -1,7 +1,7 @@
 import WebSocket from "ws";
 
 import { error, info } from "../logger.js";
-import type { ExchangeFeed, FeedEvent, FeedUpdate } from "./types.js";
+import type { ExchangeFeed, FeedUpdate } from "./types.js";
 import { nowUnixMs } from "./types.js";
 
 export interface FeedConfig {
@@ -112,32 +112,15 @@ function runOnce(
 
     ws.on("message", (data) => {
       const raw = typeof data === "string" ? data : data.toString("utf8");
-      handleEvent(feed.name, feed.handleText(raw, nowUnixMs()), onUpdate);
+      const quote = feed.handleText(raw, nowUnixMs());
+      if (quote !== null) {
+        onUpdate({ exchange: feed.name, quote });
+      }
     });
 
     ws.on("close", () => finish());
     ws.on("error", (err) => finish(err));
   });
-}
-
-function handleEvent(
-  exchange: ExchangeFeed["name"],
-  event: FeedEvent,
-  onUpdate: UpdateHandler,
-): void {
-  switch (event.type) {
-    case "quote":
-      onUpdate({ exchange, quote: event.quote });
-      break;
-    case "info":
-      info(event.message);
-      break;
-    case "error":
-      error(event.message);
-      break;
-    case "ignore":
-      break;
-  }
 }
 
 function sleep(ms: number, signal: AbortSignal): Promise<void> {

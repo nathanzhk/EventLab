@@ -1,4 +1,4 @@
-import type { ExchangeFeed, FeedEvent } from "../types.js";
+import type { ExchangeFeed } from "../types.js";
 import { finiteOrNull, parseJsonRecord, parseNumberText, Quote } from "../types.js";
 
 export class Binance implements ExchangeFeed {
@@ -9,10 +9,10 @@ export class Binance implements ExchangeFeed {
     return [];
   }
 
-  handleText(raw: string): FeedEvent {
+  handleText(raw: string): Quote | null {
     const msg = parseJsonRecord(raw);
     if (msg === null) {
-      return { type: "error", message: "binance failed to parse message" };
+      return null;
     }
 
     const bestBid = parseNumberText(msg.b);
@@ -23,9 +23,9 @@ export class Binance implements ExchangeFeed {
       finiteOrNull(bestBid) !== null &&
       finiteOrNull(bestAsk) !== null
     ) {
-      return { type: "quote", quote: Quote.new(bestBid, bestAsk, 0) };
+      return Quote.new(bestBid, bestAsk, 0);
     }
 
-    return { type: "ignore" };
+    return null;
   }
 }
