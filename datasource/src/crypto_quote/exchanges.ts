@@ -87,8 +87,9 @@ function runOnce(
 
     ws.on("open", () => {
       info(`${feed.name} connected ${feed.url}`);
-      for (const subscription of feed.subscriptions()) {
-        ws.send(subscription, (err) => {
+      const subscription = feed.subscriptions();
+      if (Object.keys(subscription).length > 0) {
+        ws.send(JSON.stringify(subscription), (err) => {
           if (err) {
             finish(new Error(`send ${feed.name} subscription: ${err.message}`));
           }

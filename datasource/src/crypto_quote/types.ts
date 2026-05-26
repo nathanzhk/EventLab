@@ -33,7 +33,7 @@ export interface FeedUpdate {
 export interface ExchangeFeed {
   readonly name: ExchangeName;
   readonly url: string;
-  subscriptions(): string[];
+  subscriptions(): Record<string, unknown>;
   heartbeatIntervalMs?(): number | null;
   heartbeatMessage?(): string | null;
   handleText(raw: string, receivedAtMs: number): Quote | null;

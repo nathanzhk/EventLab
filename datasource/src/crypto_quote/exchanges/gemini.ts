@@ -10,14 +10,12 @@ export class Gemini implements ExchangeFeed {
     private readonly stream = "btcusd@bookTicker",
   ) {}
 
-  subscriptions(): string[] {
-    return [
-      JSON.stringify({
-        id: "1",
-        method: "subscribe",
-        params: [this.stream],
-      }),
-    ];
+  subscriptions(): Record<string, unknown> {
+    return {
+      id: "1",
+      method: "subscribe",
+      params: [this.stream],
+    };
   }
 
   handleText(raw: string, receivedAtMs: number): Quote | null {

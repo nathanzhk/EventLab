@@ -7,13 +7,11 @@ export class Bybit implements ExchangeFeed {
 
   constructor(private readonly topic = "orderbook.1.BTCUSDT") {}
 
-  subscriptions(): string[] {
-    return [
-      JSON.stringify({
-        op: "subscribe",
-        args: [this.topic],
-      }),
-    ];
+  subscriptions(): Record<string, unknown> {
+    return {
+      op: "subscribe",
+      args: [this.topic],
+    };
   }
 
   heartbeatIntervalMs(): number {

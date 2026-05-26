@@ -7,14 +7,12 @@ export class Coinbase implements ExchangeFeed {
 
   constructor(private readonly productId = "BTC-USD") {}
 
-  subscriptions(): string[] {
-    return [
-      JSON.stringify({
-        type: "subscribe",
-        product_ids: [this.productId],
-        channels: ["ticker"],
-      }),
-    ];
+  subscriptions(): Record<string, unknown> {
+    return {
+      type: "subscribe",
+      product_ids: [this.productId],
+      channels: ["ticker"],
+    };
   }
 
   handleText(raw: string, receivedAtMs: number): Quote | null {

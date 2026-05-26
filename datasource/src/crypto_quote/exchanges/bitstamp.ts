@@ -7,13 +7,11 @@ export class Bitstamp implements ExchangeFeed {
 
   constructor(private readonly channel = "order_book_btcusd") {}
 
-  subscriptions(): string[] {
-    return [
-      JSON.stringify({
-        event: "bts:subscribe",
-        data: { channel: this.channel },
-      }),
-    ];
+  subscriptions(): Record<string, unknown> {
+    return {
+      event: "bts:subscribe",
+      data: { channel: this.channel },
+    };
   }
 
   handleText(raw: string, receivedAtMs: number): Quote | null {
