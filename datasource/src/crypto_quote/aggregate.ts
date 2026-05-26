@@ -90,7 +90,7 @@ class LatestQuotes {
 
   update(update: FeedUpdate): void {
     const { exchange, quote } = update;
-    const delayMs = quote.delayMs;
+    const delayMs = quote.delayMs();
     const wasEnabled = this.enabled.get(exchange) ?? false;
     const hasAcceptedQuote = this.acceptedQuotes.has(exchange);
 
@@ -188,7 +188,8 @@ class LatestQuotes {
       return `${exchange} NA (NA)`;
     }
 
-    const delay = quote.delayMs !== null ? `${quote.delayMs.toFixed(2)}ms` : "NA";
+    const delayMs = quote.delayMs();
+    const delay = delayMs !== null ? `${delayMs.toFixed(2)}ms` : "NA";
     return `${exchange} ${quote.mid().toFixed(8)} (${delay})`;
   }
 
@@ -199,7 +200,7 @@ class LatestQuotes {
       const mid = quote?.mid() ?? null;
       const baselineMid = baseline?.[ex.name] ?? null;
       const change = mid !== null && baselineMid !== null ? mid - baselineMid : null;
-      const delay = quote?.delayMs ?? null;
+      const delay = quote?.delayMs() ?? null;
 
       exchanges[ex.name] = {
         price: roundedOrNull(mid, 4),

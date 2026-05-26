@@ -24,7 +24,7 @@ export class Coinbase implements ExchangeFeed {
   }
 }
 
-function parseTicker(msg: Record<string, unknown>, receivedAtMs: number): Quote | null {
+function parseTicker(msg: Record<string, unknown>, recvTsMs: number): Quote | null {
   if (typeof msg.time !== "string") {
     return null;
   }
@@ -36,5 +36,5 @@ function parseTicker(msg: Record<string, unknown>, receivedAtMs: number): Quote 
     return null;
   }
 
-  return Quote.withDelay(timestampMs, bestBid, bestAsk, receivedAtMs);
+  return Quote.new(bestBid, bestAsk, timestampMs, recvTsMs);
 }

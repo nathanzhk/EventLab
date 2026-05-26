@@ -2,26 +2,22 @@ export type ExchangeName = "bybit" | "gemini" | "binance" | "bitstamp" | "coinba
 
 export class Quote {
   constructor(
-    public readonly bestBid: number,
-    public readonly bestAsk: number,
-    public readonly delayMs: number | null,
+    public readonly bid: number,
+    public readonly ask: number,
+    public readonly exchTsMs: number,
+    public readonly recvTsMs: number,
   ) {}
 
-  static new(bestBid: number, bestAsk: number, delayMs: number): Quote {
-    return new Quote(bestBid, bestAsk, finiteOrNull(delayMs));
-  }
-
-  static withDelay(
-    timestampMs: number,
-    bestBid: number,
-    bestAsk: number,
-    receivedAtMs: number,
-  ): Quote {
-    return new Quote(bestBid, bestAsk, finiteOrNull(receivedAtMs - timestampMs));
+  static new(bid: number, ask: number, exchTsMs: number, recvTsMs: number): Quote {
+    return new Quote(bid, ask, exchTsMs, recvTsMs);
   }
 
   mid(): number {
-    return (this.bestBid + this.bestAsk) / 2;
+    return (this.bid + this.ask) / 2;
+  }
+
+  delayMs(): number | null {
+    return finiteOrNull(this.recvTsMs - this.exchTsMs);
   }
 }
 

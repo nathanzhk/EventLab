@@ -27,7 +27,7 @@ export class Gemini implements ExchangeFeed {
   }
 }
 
-function parseBookTicker(msg: Record<string, unknown>, receivedAtMs: number): Quote | null {
+function parseBookTicker(msg: Record<string, unknown>, recvTsMs: number): Quote | null {
   const eventTime = typeof msg.E === "number" ? msg.E : null;
   const bestBid = parseNumberText(msg.b);
   const bestAsk = parseNumberText(msg.a);
@@ -36,5 +36,5 @@ function parseBookTicker(msg: Record<string, unknown>, receivedAtMs: number): Qu
     return null;
   }
 
-  return Quote.withDelay(eventTime / 1_000_000, bestBid, bestAsk, receivedAtMs);
+  return Quote.new(bestBid, bestAsk, eventTime / 1_000_000, recvTsMs);
 }

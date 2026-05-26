@@ -31,7 +31,7 @@ export class Bybit implements ExchangeFeed {
   }
 }
 
-function parseOrderbookTop(msg: Record<string, unknown>, receivedAtMs: number): Quote | null {
+function parseOrderbookTop(msg: Record<string, unknown>, recvTsMs: number): Quote | null {
   const timestampMs = typeof msg.ts === "number" ? msg.ts : null;
   const data = msg.data;
   if (timestampMs === null || typeof data !== "object" || data === null || Array.isArray(data)) {
@@ -44,5 +44,5 @@ function parseOrderbookTop(msg: Record<string, unknown>, receivedAtMs: number): 
     return null;
   }
 
-  return Quote.withDelay(timestampMs, bestBid, bestAsk, receivedAtMs);
+  return Quote.new(bestBid, bestAsk, timestampMs, recvTsMs);
 }

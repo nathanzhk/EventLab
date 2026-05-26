@@ -23,7 +23,7 @@ export class Bitstamp implements ExchangeFeed {
   }
 }
 
-function parseOrderBook(book: Record<string, unknown>, receivedAtMs: number): Quote | null {
+function parseOrderBook(book: Record<string, unknown>, recvTsMs: number): Quote | null {
   const microtimestamp =
     typeof book.microtimestamp === "string" ? Number(book.microtimestamp) / 1000 : null;
   const timestamp = typeof book.timestamp === "string" ? Number(book.timestamp) * 1000 : null;
@@ -38,5 +38,5 @@ function parseOrderBook(book: Record<string, unknown>, receivedAtMs: number): Qu
     return null;
   }
 
-  return Quote.withDelay(timestampMs, bestBid, bestAsk, receivedAtMs);
+  return Quote.new(bestBid, bestAsk, timestampMs, recvTsMs);
 }
