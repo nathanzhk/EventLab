@@ -5,7 +5,11 @@
 logs/
 *.log
 *.json
-target/
+!package.json
+!package-lock.json
+!tsconfig.json
+node_modules/
+dist/
 
 __pycache__/
 *.py[cod]

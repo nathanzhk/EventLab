@@ -1,6 +1,6 @@
 [tools]
 python = "3.13"
-rust = "latest"
+node = "24"
 uv = "latest"
 
 [settings]
