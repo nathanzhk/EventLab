@@ -1,5 +1,5 @@
 import type { ExchangeFeed } from "../types.js";
-import { parseJsonRecord, parseNumberText, Quote } from "../types.js";
+import { parseNumberText, Quote } from "../types.js";
 
 export class Gemini implements ExchangeFeed {
   readonly name = "gemini";
@@ -18,14 +18,9 @@ export class Gemini implements ExchangeFeed {
     };
   }
 
-  handleText(raw: string, receivedAtMs: number): Quote | null {
-    const msg = parseJsonRecord(raw);
-    if (msg === null) {
-      return null;
-    }
-
-    if (msg.s === this.symbol && msg.b !== undefined && msg.a !== undefined) {
-      return parseBookTicker(msg, receivedAtMs);
+  parseMessage(message: Record<string, unknown>, recvTsMs: number): Quote | null {
+    if (message.s === this.symbol && message.b !== undefined && message.a !== undefined) {
+      return parseBookTicker(message, recvTsMs);
     }
 
     return null;

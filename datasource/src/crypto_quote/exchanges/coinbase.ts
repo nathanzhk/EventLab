@@ -1,5 +1,5 @@
 import type { ExchangeFeed } from "../types.js";
-import { parseJsonRecord, parseNumberText, Quote } from "../types.js";
+import { parseNumberText, Quote } from "../types.js";
 
 export class Coinbase implements ExchangeFeed {
   readonly name = "coinbase";
@@ -15,14 +15,9 @@ export class Coinbase implements ExchangeFeed {
     };
   }
 
-  handleText(raw: string, receivedAtMs: number): Quote | null {
-    const msg = parseJsonRecord(raw);
-    if (msg === null || typeof msg.type !== "string") {
-      return null;
-    }
-
-    if (msg.type === "ticker" && msg.product_id === this.productId) {
-      return parseTicker(msg, receivedAtMs);
+  parseMessage(message: Record<string, unknown>, recvTsMs: number): Quote | null {
+    if (message.type === "ticker" && message.product_id === this.productId) {
+      return parseTicker(message, recvTsMs);
     }
 
     return null;

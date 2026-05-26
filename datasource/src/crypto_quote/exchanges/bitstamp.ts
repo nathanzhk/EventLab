@@ -1,5 +1,5 @@
 import type { ExchangeFeed } from "../types.js";
-import { firstString, isRecord, parseJsonRecord, parseNumberText, Quote } from "../types.js";
+import { firstString, isRecord, parseNumberText, Quote } from "../types.js";
 
 export class Bitstamp implements ExchangeFeed {
   readonly name = "bitstamp";
@@ -14,14 +14,9 @@ export class Bitstamp implements ExchangeFeed {
     };
   }
 
-  handleText(raw: string, receivedAtMs: number): Quote | null {
-    const msg = parseJsonRecord(raw);
-    if (msg === null) {
-      return null;
-    }
-
-    if (msg.event === "data" && msg.channel === this.channel) {
-      return isRecord(msg.data) ? parseOrderBook(msg.data, receivedAtMs) : null;
+  parseMessage(message: Record<string, unknown>, recvTsMs: number): Quote | null {
+    if (message.event === "data" && message.channel === this.channel) {
+      return isRecord(message.data) ? parseOrderBook(message.data, recvTsMs) : null;
     }
 
     return null;

@@ -1,5 +1,5 @@
 import type { ExchangeFeed } from "../types.js";
-import { firstString, parseJsonRecord, parseNumberText, Quote } from "../types.js";
+import { firstString, parseNumberText, Quote } from "../types.js";
 
 export class Bybit implements ExchangeFeed {
   readonly name = "bybit";
@@ -22,14 +22,9 @@ export class Bybit implements ExchangeFeed {
     return JSON.stringify({ op: "ping" });
   }
 
-  handleText(raw: string, receivedAtMs: number): Quote | null {
-    const msg = parseJsonRecord(raw);
-    if (msg === null) {
-      return null;
-    }
-
-    if (msg.topic === this.topic) {
-      return parseOrderbookTop(msg, receivedAtMs);
+  parseMessage(message: Record<string, unknown>, recvTsMs: number): Quote | null {
+    if (message.topic === this.topic) {
+      return parseOrderbookTop(message, recvTsMs);
     }
 
     return null;

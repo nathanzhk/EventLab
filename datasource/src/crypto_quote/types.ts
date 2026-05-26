@@ -36,7 +36,7 @@ export interface ExchangeFeed {
   subscriptions(): Record<string, unknown>;
   heartbeatIntervalMs?(): number | null;
   heartbeatMessage?(): string | null;
-  handleText(raw: string, receivedAtMs: number): Quote | null;
+  parseMessage(message: Record<string, unknown>, recvTsMs: number): Quote | null;
 }
 
 export function nowUnixMs(): number {
