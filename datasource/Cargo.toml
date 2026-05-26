@@ -1,6 +1,6 @@
 [package]
-name = "bitcoin"
-version = "0.1.0"
+name = "datasource"
+version = "0.0.0"
 edition = "2024"
 
 [dependencies]

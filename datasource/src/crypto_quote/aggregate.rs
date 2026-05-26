@@ -9,7 +9,7 @@ use tokio::{
     sync::{broadcast, mpsc},
 };
 
-use crate::exchanges::{FeedUpdate, Quote, now_unix_ms};
+use super::exchanges::{FeedUpdate, Quote, now_unix_ms};
 
 const MAX_DELAY_MS: f64 = 200.0;
 const WINDOW_SECONDS: u64 = 300;

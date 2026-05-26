@@ -1,21 +1,20 @@
-mod aggregate;
+mod crypto_quote;
 mod dashboard;
-mod exchanges;
 
 use std::net::SocketAddr;
 
-use aggregate::{AggregateConfig, run_aggregator};
 use anyhow::Result;
 use clap::Parser;
-use dashboard::run_dashboard;
-use exchanges::{FeedConfig, run_feed};
-use exchanges::{
+use crypto_quote::aggregate::{AggregateConfig, run_aggregator};
+use crypto_quote::exchanges::{FeedConfig, run_feed};
+use crypto_quote::exchanges::{
     binance::Binance,
     bitstamp::Bitstamp,
     bybit::Bybit,
     coinbase::Coinbase,
     gemini::Gemini,
 };
+use dashboard::run_dashboard;
 use tokio::sync::{broadcast, mpsc};
 use tracing::info;
 
@@ -79,9 +78,9 @@ async fn run(
     Ok(())
 }
 
-fn spawn_feed<F>(feed: F, config: FeedConfig, updates: mpsc::Sender<exchanges::FeedUpdate>)
+fn spawn_feed<F>(feed: F, config: FeedConfig, updates: mpsc::Sender<crypto_quote::exchanges::FeedUpdate>)
 where
-    F: exchanges::ExchangeFeed,
+    F: crypto_quote::exchanges::ExchangeFeed,
 {
     tokio::spawn(async move {
         if let Err(error) = run_feed(feed, config, updates).await {
