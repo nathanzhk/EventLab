@@ -1,42 +1,35 @@
 import type { ExchangeFeed } from "../types.js";
-import { firstString, isRecord, parseNumberText, Quote } from "../types.js";
+import { Quote } from "../types.js";
 
 export class Bitstamp implements ExchangeFeed {
   readonly name = "bitstamp";
   readonly url = "wss://ws.bitstamp.net";
 
-  constructor(private readonly channel = "order_book_btcusd") {}
-
   subscriptions(): Record<string, unknown> {
     return {
       event: "bts:subscribe",
-      data: { channel: this.channel },
+      data: { channel: "order_book_btcusd" },
     };
   }
 
   parseMessage(message: Record<string, unknown>, recvTsMs: number): Quote | null {
-    if (message.event === "data" && message.channel === this.channel) {
-      return isRecord(message.data) ? parseOrderBook(message.data, recvTsMs) : null;
+    if (message.event !== "data") {
+      return null;
     }
+    const orderBook = message.data as Record<string, unknown>;
 
-    return null;
+    const microTs = Number(orderBook.microtimestamp);
+    const secondTs = Number(orderBook.timestamp);
+    const tsMs = Number.isFinite(microTs) ? microTs / 1000 : secondTs * 1000;
+
+    const bids = orderBook.bids as string[][];
+    const asks = orderBook.asks as string[][];
+    const bestBid = Number(bids[0]?.[0]);
+    const bestAsk = Number(asks[0]?.[0]);
+
+    if (!Number.isFinite(tsMs) || !Number.isFinite(bestBid) || !Number.isFinite(bestAsk)) {
+      return null;
+    }
+    return Quote.new(bestBid, bestAsk, tsMs, recvTsMs);
   }
-}
-
-function parseOrderBook(book: Record<string, unknown>, recvTsMs: number): Quote | null {
-  const microtimestamp =
-    typeof book.microtimestamp === "string" ? Number(book.microtimestamp) / 1000 : null;
-  const timestamp = typeof book.timestamp === "string" ? Number(book.timestamp) * 1000 : null;
-  const timestampMs = Number.isFinite(microtimestamp) ? microtimestamp : timestamp;
-  if (timestampMs === null || !Number.isFinite(timestampMs)) {
-    return null;
-  }
-
-  const bestBid = parseNumberText(firstString(book.bids));
-  const bestAsk = parseNumberText(firstString(book.asks));
-  if (bestBid === null || bestAsk === null) {
-    return null;
-  }
-
-  return Quote.new(bestBid, bestAsk, timestampMs, recvTsMs);
 }

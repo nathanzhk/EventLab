@@ -3,7 +3,6 @@ import { dirname } from "node:path";
 
 import type { DashboardBroadcaster } from "../dashboard/server.js";
 import type { ExchangeName, FeedUpdate, Quote } from "./types.js";
-import { nowUnixMs } from "./types.js";
 
 const UPDATE_DELAY_MS = 300.0;
 const DROP_DELAY_MS = 500.0;
@@ -40,7 +39,7 @@ export class Aggregator {
   }
 
   onUpdate(update: FeedUpdate): void {
-    const localTimestampMs = nowUnixMs();
+    const localTimestampMs = Date.now();
     const window = Window.fromTimestampMs(localTimestampMs);
 
     this.state.update(update);

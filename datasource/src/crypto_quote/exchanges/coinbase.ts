@@ -1,40 +1,30 @@
 import type { ExchangeFeed } from "../types.js";
-import { parseNumberText, Quote } from "../types.js";
+import { Quote } from "../types.js";
 
 export class Coinbase implements ExchangeFeed {
   readonly name = "coinbase";
   readonly url = "wss://ws-feed.exchange.coinbase.com";
 
-  constructor(private readonly productId = "BTC-USD") {}
-
   subscriptions(): Record<string, unknown> {
     return {
       type: "subscribe",
-      product_ids: [this.productId],
       channels: ["ticker"],
+      product_ids: ["BTC-USD"],
     };
   }
 
   parseMessage(message: Record<string, unknown>, recvTsMs: number): Quote | null {
-    if (message.type === "ticker" && message.product_id === this.productId) {
-      return parseTicker(message, recvTsMs);
+    if (message.type !== "ticker") {
+      return null;
     }
 
-    return null;
-  }
-}
+    const tsMs = Date.parse(message.time as string);
+    const bestBid = Number(message.best_bid);
+    const bestAsk = Number(message.best_ask);
 
-function parseTicker(msg: Record<string, unknown>, recvTsMs: number): Quote | null {
-  if (typeof msg.time !== "string") {
-    return null;
+    if (!Number.isFinite(tsMs) || !Number.isFinite(bestBid) || !Number.isFinite(bestAsk)) {
+      return null;
+    }
+    return Quote.new(bestBid, bestAsk, tsMs, recvTsMs);
   }
-  const timestampMs = Date.parse(msg.time);
-  const bestBid = parseNumberText(msg.best_bid);
-  const bestAsk = parseNumberText(msg.best_ask);
-
-  if (!Number.isFinite(timestampMs) || bestBid === null || bestAsk === null) {
-    return null;
-  }
-
-  return Quote.new(bestBid, bestAsk, timestampMs, recvTsMs);
 }

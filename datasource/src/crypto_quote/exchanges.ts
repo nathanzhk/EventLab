@@ -2,7 +2,6 @@ import WebSocket from "ws";
 
 import { error, info } from "../logger.js";
 import type { ExchangeFeed, FeedUpdate } from "./types.js";
-import { nowUnixMs, parseJsonRecord } from "./types.js";
 
 export interface FeedConfig {
   reconnectMinDelayMs: number;
@@ -113,12 +112,14 @@ function runOnce(
 
     ws.on("message", (data) => {
       const raw = typeof data === "string" ? data : data.toString("utf8");
-      const msg = parseJsonRecord(raw);
-      if (msg === null) {
+      let msg: Record<string, unknown>;
+      try {
+        msg = JSON.parse(raw) as Record<string, unknown>;
+      } catch {
         return;
       }
 
-      const quote = feed.parseMessage(msg, nowUnixMs());
+      const quote = feed.parseMessage(msg, Date.now());
       if (quote !== null) {
         onUpdate({ exchange: feed.name, quote });
       }

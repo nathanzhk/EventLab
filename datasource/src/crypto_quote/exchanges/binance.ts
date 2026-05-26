@@ -1,5 +1,5 @@
 import type { ExchangeFeed } from "../types.js";
-import { parseNumberText, Quote } from "../types.js";
+import { Quote } from "../types.js";
 
 export class Binance implements ExchangeFeed {
   readonly name = "binance";
@@ -10,12 +10,12 @@ export class Binance implements ExchangeFeed {
   }
 
   parseMessage(message: Record<string, unknown>, recvTsMs: number): Quote | null {
-    const bestBid = parseNumberText(message.b);
-    const bestAsk = parseNumberText(message.a);
-    if (bestBid !== null && bestAsk !== null) {
-      return Quote.new(bestBid, bestAsk, recvTsMs, recvTsMs);
-    }
+    const bestBid = Number(message.b);
+    const bestAsk = Number(message.a);
 
-    return null;
+    if (!Number.isFinite(bestBid) || !Number.isFinite(bestAsk)) {
+      return null;
+    }
+    return Quote.new(bestBid, bestAsk, recvTsMs, recvTsMs);
   }
 }
