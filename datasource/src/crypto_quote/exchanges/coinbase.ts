@@ -25,6 +25,6 @@ export class Coinbase implements ExchangeFeed {
     if (!Number.isFinite(tsMs) || !Number.isFinite(bestBid) || !Number.isFinite(bestAsk)) {
       return null;
     }
-    return Quote.new(bestBid, bestAsk, tsMs, recvTsMs);
+    return new Quote(bestBid, bestAsk, tsMs, recvTsMs);
   }
 }

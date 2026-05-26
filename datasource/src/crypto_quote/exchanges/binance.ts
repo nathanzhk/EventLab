@@ -16,6 +16,6 @@ export class Binance implements ExchangeFeed {
     if (!Number.isFinite(bestBid) || !Number.isFinite(bestAsk)) {
       return null;
     }
-    return Quote.new(bestBid, bestAsk, recvTsMs, recvTsMs);
+    return new Quote(bestBid, bestAsk, recvTsMs, recvTsMs);
   }
 }

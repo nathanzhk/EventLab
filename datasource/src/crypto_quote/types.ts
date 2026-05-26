@@ -8,10 +8,6 @@ export class Quote {
     public readonly recvTsMs: number,
   ) {}
 
-  static new(bid: number, ask: number, exchTsMs: number, recvTsMs: number): Quote {
-    return new Quote(bid, ask, exchTsMs, recvTsMs);
-  }
-
   mid(): number {
     return (this.bid + this.ask) / 2;
   }
