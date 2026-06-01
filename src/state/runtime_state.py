@@ -5,7 +5,6 @@ import dataclasses
 from typing import Any, Literal
 
 from events import (
-    CryptoOHLCVEvent,
     CryptoQuoteEvent,
     CurrentPositionEvent,
     MarketQuoteEvent,
@@ -64,7 +63,6 @@ class RuntimeState:
         self._no_quote: MarketQuoteEvent | None = None
 
         self._crypto_quote: CryptoQuoteEvent | None = None
-        self._crypto_ohlcv: CryptoOHLCVEvent | None = None
 
         self._yes_position: CurrentPositionEvent | None = None
         self._no_position: CurrentPositionEvent | None = None
@@ -108,24 +106,6 @@ class RuntimeState:
         )
         return state_event
 
-    async def update_crypto_ohlcv(
-        self,
-        ohlcv: CryptoOHLCVEvent,
-    ) -> RuntimeStateEvent | None:
-        async with self._lock:
-            self._crypto_ohlcv = ohlcv
-            state_event = self._event_if_changed("crypto_ohlcv")
-        logger.debug(
-            "latency=%.2fms open=%.2f high=%.2f low=%.2f close=%.2f volume=%.2f",
-            elapsed_ms_since(ohlcv.recv_mono_ns),
-            ohlcv.open,
-            ohlcv.high,
-            ohlcv.low,
-            ohlcv.close,
-            ohlcv.volume,
-        )
-        return state_event
-
     async def update_current_position(
         self, position: CurrentPositionEvent
     ) -> RuntimeStateEvent | None:
@@ -161,12 +141,7 @@ class RuntimeState:
         return event
 
     def _build_event(self, reason: str) -> RuntimeStateEvent | None:
-        if (
-            self._no_quote is None
-            or self._yes_quote is None
-            or self._crypto_quote is None
-            or self._crypto_ohlcv is None
-        ):
+        if self._no_quote is None or self._yes_quote is None or self._crypto_quote is None:
             return None
         return RuntimeStateEvent(
             reason=reason,
@@ -174,7 +149,6 @@ class RuntimeState:
             yes_token_quote=self._yes_quote,
             no_token_quote=self._no_quote,
             crypto_quote=self._crypto_quote,
-            crypto_ohlcv=self._crypto_ohlcv,
             yes_token_position=self._yes_position,
             no_token_position=self._no_position,
         )
@@ -197,10 +171,6 @@ def _event_signature(event: RuntimeStateEvent) -> tuple[Any, ...]:
             event.crypto_quote.baseline,
             event.crypto_quote.change,
             event.crypto_quote.price,
-        ),
-        (
-            event.crypto_ohlcv.start_ts_ms,
-            event.crypto_ohlcv.close_ts_ms,
         ),
         (
             event.yes_token_position.opening_shares,
@@ -227,11 +197,10 @@ def _event_signature(event: RuntimeStateEvent) -> tuple[Any, ...]:
 
 def _log_event(event: RuntimeStateEvent) -> None:
     logger.debug(
-        "UP %.2fms | DN %.2fms | BTC %.2fms | OHLCV %.2fms",
+        "UP %.2fms | DN %.2fms | BTC %.2fms",
         elapsed_ms_since(event.yes_token_quote.recv_mono_ns),
         elapsed_ms_since(event.no_token_quote.recv_mono_ns),
         elapsed_ms_since(event.crypto_quote.recv_mono_ns),
-        elapsed_ms_since(event.crypto_ohlcv.recv_mono_ns),
     )
     logger.info(
         "[%s-%s] ▲ bid %.2f ask %.2f | ▼ bid %.2f ask %.2f | $%.2f %s",

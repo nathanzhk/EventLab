@@ -114,13 +114,6 @@ def _serialize_state(event: RuntimeStateEvent) -> dict[str, Any]:
             "best_ask": event.crypto_quote.best_ask,
             "mid": event.crypto_quote.mid,
         },
-        "ohlcv": {
-            "open": event.crypto_ohlcv.open,
-            "high": event.crypto_ohlcv.high,
-            "low": event.crypto_ohlcv.low,
-            "close": event.crypto_ohlcv.close,
-            "volume": event.crypto_ohlcv.volume,
-        },
         "prev_side": event.prev_side,
         "curr_side": event.curr_side,
         "yes_position": _serialize_position(event.yes_token_position),

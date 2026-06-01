@@ -114,16 +114,6 @@
     <div class="row"><span class="label">Change</span><span class="val" id="btc-change">--</span></div>
   </div>
 
-  <!-- OHLCV -->
-  <div class="card">
-    <div class="card-title">BTC OHLCV</div>
-    <div class="row"><span class="label">Open</span><span class="val" id="ohlcv-open">--</span></div>
-    <div class="row"><span class="label">High</span><span class="val up" id="ohlcv-high">--</span></div>
-    <div class="row"><span class="label">Low</span><span class="val dn" id="ohlcv-low">--</span></div>
-    <div class="row"><span class="label">Close</span><span class="val" id="ohlcv-close">--</span></div>
-    <div class="row"><span class="label">Volume</span><span class="val" id="ohlcv-vol">--</span></div>
-  </div>
-
   <!-- Positions -->
   <div class="card full-width">
     <div class="card-title">Positions</div>
@@ -277,13 +267,6 @@ function render(d) {
   $('btc-baseline').textContent = fmt(d.crypto.baseline);
   const changeEl = $('btc-change');
   changeEl.innerHTML = signedUsd(d.crypto.change);
-
-  // OHLCV
-  $('ohlcv-open').textContent = fmt(d.ohlcv.open);
-  $('ohlcv-high').textContent = fmt(d.ohlcv.high);
-  $('ohlcv-low').textContent = fmt(d.ohlcv.low);
-  $('ohlcv-close').textContent = fmt(d.ohlcv.close);
-  $('ohlcv-vol').textContent = fmt(d.ohlcv.volume, 4);
 
   // Positions
   renderPosition('yes', d.yes_position, d.yes_quote.best_bid);

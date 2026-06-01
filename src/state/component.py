@@ -8,7 +8,7 @@ from event_bus import (
     OverflowPolicy,
     Subscription,
 )
-from events import CryptoOHLCVEvent, CryptoQuoteEvent, CurrentPositionEvent, MarketQuoteEvent
+from events import CryptoQuoteEvent, CurrentPositionEvent, MarketQuoteEvent
 from markets.base import Market
 from state.runtime_state import RuntimeState
 
@@ -38,14 +38,6 @@ class RuntimeStateComponent:
         )
         tasks.create_task(self._crypto_quote_loop(crypto_quote_events))
 
-        crypto_ohlcv_events = self._bus.subscribe(
-            CryptoOHLCVEvent,
-            name="runtime-state.crypto-ohlcv",
-            maxsize=100,
-            overflow=OverflowPolicy.BLOCK,
-        )
-        tasks.create_task(self._crypto_ohlcv_loop(crypto_ohlcv_events))
-
         current_position_events = self._bus.subscribe(
             CurrentPositionEvent,
             name="runtime-state.current-position",
@@ -63,12 +55,6 @@ class RuntimeStateComponent:
     async def _crypto_quote_loop(self, events: Subscription[CryptoQuoteEvent]) -> None:
         async for quote in events:
             state_event = await self._state.update_crypto_quote(quote)
-            if state_event is not None:
-                await self._bus.publish(state_event)
-
-    async def _crypto_ohlcv_loop(self, events: Subscription[CryptoOHLCVEvent]) -> None:
-        async for ohlcv in events:
-            state_event = await self._state.update_crypto_ohlcv(ohlcv)
             if state_event is not None:
                 await self._bus.publish(state_event)
 

@@ -19,7 +19,6 @@ _MARKET_LOGGER_NAMES = frozenset(
         "MARKET QUOTE",
         "MARKET TRADE",
         "CRYPTO QUOTE",
-        "CRYPTO OHLCV",
     }
 )
 _TRADE_LOGGER_NAMES = frozenset(

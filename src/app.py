@@ -7,7 +7,6 @@ from typing import Literal, Protocol
 
 from event_bus import EventBus
 from events import (
-    CryptoOHLCVEvent,
     CryptoQuoteEvent,
     MarketOrderEvent,
     MarketQuoteEvent,
@@ -29,11 +28,9 @@ from strategy.component import strategy_component
 from strategy.engine import StrategyEngine
 from strategy.strategy import Strategy
 from streams import (
-    CryptoOHLCVStream,
     CryptoQuoteStream,
     MarketQuoteStream,
     MarketTradeStream,
-    crypto_ohlcv_component,
     crypto_quote_component,
     market_quote_component,
     market_trade_component,
@@ -53,7 +50,6 @@ class RuntimeContext:
     market_quote_stream: AsyncIterable[MarketQuoteEvent]
     market_trade_stream: AsyncIterable[MarketOrderEvent | MarketTradeEvent]
     crypto_quote_stream: AsyncIterable[CryptoQuoteEvent]
-    crypto_ohlcv_stream: AsyncIterable[CryptoOHLCVEvent]
 
 
 class RuntimeComponent(Protocol):
@@ -102,7 +98,6 @@ class Runtime:
             market_quote_stream=MarketQuoteStream(market),
             market_trade_stream=market_trade_stream,
             crypto_quote_stream=CryptoQuoteStream(symbol),
-            crypto_ohlcv_stream=CryptoOHLCVStream(symbol),
         )
         self._register_components()
 
@@ -126,7 +121,6 @@ class Runtime:
             self._register_component(paper_match_component())
         self._register_component(market_trade_component())
         self._register_component(crypto_quote_component())
-        self._register_component(crypto_ohlcv_component())
         self._register_component(runtime_state_component())
         self._register_component(web_component())
 

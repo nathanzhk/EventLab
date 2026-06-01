@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 
 from event_bus import EventBus
 from events import (
-    CryptoOHLCVEvent,
     CryptoQuoteEvent,
     MarketOrderEvent,
     MarketQuoteEvent,
@@ -48,11 +47,4 @@ def crypto_quote_component() -> ComponentFactory:
     return lambda context: _StreamComponent[CryptoQuoteEvent](
         bus=context.bus,
         stream=context.crypto_quote_stream,
-    )
-
-
-def crypto_ohlcv_component() -> ComponentFactory:
-    return lambda context: _StreamComponent[CryptoOHLCVEvent](
-        bus=context.bus,
-        stream=context.crypto_ohlcv_stream,
     )

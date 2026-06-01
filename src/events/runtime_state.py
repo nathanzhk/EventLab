@@ -4,7 +4,6 @@ from dataclasses import dataclass, field
 from time import perf_counter_ns
 from typing import Literal
 
-from events.crypto_ohlcv import CryptoOHLCVEvent
 from events.crypto_quote import CryptoQuoteEvent
 from events.current_position import CurrentPositionEvent
 from events.market_quote import MarketQuoteEvent
@@ -21,7 +20,6 @@ class RuntimeStateEvent:
     yes_token_quote: MarketQuoteEvent
     no_token_quote: MarketQuoteEvent
     crypto_quote: CryptoQuoteEvent
-    crypto_ohlcv: CryptoOHLCVEvent
     yes_token_position: CurrentPositionEvent | None
     no_token_position: CurrentPositionEvent | None
     prev_side: Side = None
