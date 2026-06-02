@@ -5,11 +5,11 @@ from collections.abc import AsyncIterable, Callable
 from dataclasses import dataclass
 from typing import Literal, Protocol
 
+from datasource import MarketQuoteEvent, MarketQuoteStream
 from event_bus import EventBus
 from events import (
     CryptoQuoteEvent,
     MarketOrderEvent,
-    MarketQuoteEvent,
     MarketTradeEvent,
 )
 from execution.clients import MakerTradeClient, TakerTradeClient
@@ -29,7 +29,6 @@ from strategy.engine import StrategyEngine
 from strategy.strategy import Strategy
 from streams import (
     CryptoQuoteStream,
-    MarketQuoteStream,
     MarketTradeStream,
     crypto_quote_component,
     market_quote_component,

@@ -4,10 +4,10 @@ import asyncio
 import dataclasses
 from typing import Any, Literal
 
+from datasource import MarketQuoteEvent
 from events import (
     CryptoQuoteEvent,
     CurrentPositionEvent,
-    MarketQuoteEvent,
     RuntimeStateEvent,
 )
 from markets.base import Market

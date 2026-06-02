@@ -3,8 +3,8 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
+from datasource import MarketQuoteEvent
 from event_bus import EventBus, OverflowPolicy, Subscription
-from events import MarketQuoteEvent
 from paper.simulator import PaperExchangeSimulator
 
 if TYPE_CHECKING:

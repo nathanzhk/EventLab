@@ -4,11 +4,11 @@ import asyncio
 from collections.abc import AsyncIterable
 from typing import TYPE_CHECKING
 
+from datasource import MarketQuoteEvent
 from event_bus import EventBus
 from events import (
     CryptoQuoteEvent,
     MarketOrderEvent,
-    MarketQuoteEvent,
     MarketTradeEvent,
 )
 
