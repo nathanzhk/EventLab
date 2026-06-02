@@ -7,10 +7,11 @@ import orjson
 from websockets.asyncio.client import ClientConnection, connect
 from websockets.exceptions import ConnectionClosed
 
-from events import MarketQuoteEvent
 from markets.base import Market
 from utils.env import Env
 from utils.logger import get_logger
+
+from .event import MarketQuoteEvent
 
 _RECONNECT_DELAY_S = 2
 _PING_INTERVAL_S = 10
