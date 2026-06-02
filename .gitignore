@@ -3,6 +3,7 @@
 .env
 .http
 logs/
+data/
 *.log
 *.json
 !package.json

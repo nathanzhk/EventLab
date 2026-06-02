@@ -51,16 +51,19 @@ class BinanceFeed:
 class CoinbaseFeed:
     source: str = "coinbase"
     url: str = "wss://ws-feed.exchange.coinbase.com"
+    product_id: str = "BTC-USD"
 
     def subscribe(self) -> dict[str, object]:
         return {
             "type": "subscribe",
             "channels": ["ticker"],
-            "product_ids": ["BTC-USD"],
+            "product_ids": [self.product_id],
         }
 
     def parse_message(self, message: dict[str, Any], recv_ts_ms: int) -> ExchangeQuote | None:
         if message.get("type") != "ticker":
+            return None
+        if message.get("product_id") != self.product_id:
             return None
         raw_time = message.get("time")
         if not isinstance(raw_time, str):
@@ -73,6 +76,50 @@ class CoinbaseFeed:
         best_ask = _float_or_none(message.get("best_ask"))
         if best_bid is None or best_ask is None:
             return None
+        return ExchangeQuote(self.source, best_bid, best_ask, exch_ts_ms, recv_ts_ms)
+
+
+@dataclass(frozen=True, slots=True)
+class KrakenTickerFeed:
+    source: str = "kraken_usdtusd"
+    url: str = "wss://ws.kraken.com/v2"
+    symbol: str = "USDT/USD"
+
+    def subscribe(self) -> dict[str, object]:
+        return {
+            "method": "subscribe",
+            "params": {
+                "channel": "ticker",
+                "symbol": [self.symbol],
+                "event_trigger": "bbo",
+            },
+        }
+
+    def parse_message(self, message: dict[str, Any], recv_ts_ms: int) -> ExchangeQuote | None:
+        if message.get("channel") != "ticker":
+            return None
+
+        data = message.get("data")
+        if not isinstance(data, list) or not data:
+            return None
+
+        ticker = data[0]
+        if not isinstance(ticker, dict) or ticker.get("symbol") != self.symbol:
+            return None
+
+        best_bid = _float_or_none(ticker.get("bid"))
+        best_ask = _float_or_none(ticker.get("ask"))
+        if best_bid is None or best_ask is None:
+            return None
+
+        exch_ts_ms = recv_ts_ms
+        raw_time = ticker.get("timestamp")
+        if isinstance(raw_time, str):
+            try:
+                exch_ts_ms = iso_to_ms(raw_time)
+            except Exception:
+                pass
+
         return ExchangeQuote(self.source, best_bid, best_ask, exch_ts_ms, recv_ts_ms)
 
 
@@ -108,59 +155,52 @@ class BybitFeed:
 
 
 @dataclass(frozen=True, slots=True)
-class BitstampFeed:
-    source: str = "bitstamp"
-    url: str = "wss://ws.bitstamp.net"
+class ChainlinkFeed:
+    source: str = "chainlink"
+    url: str = "wss://ws-live-data.polymarket.com"
+    symbol: str = "btc/usd"
 
     def subscribe(self) -> dict[str, object]:
         return {
-            "event": "bts:subscribe",
-            "data": {"channel": "order_book_btcusd"},
+            "action": "subscribe",
+            "subscriptions": [
+                {
+                    "topic": "crypto_prices_chainlink",
+                    "type": "*",
+                    "filters": f'{{"symbol":"{self.symbol}"}}',
+                }
+            ],
         }
 
     def parse_message(self, message: dict[str, Any], recv_ts_ms: int) -> ExchangeQuote | None:
-        if message.get("event") != "data":
+        if message.get("topic") != "crypto_prices_chainlink":
             return None
-        data = message.get("data")
-        if not isinstance(data, dict):
+
+        payload = message.get("payload")
+        if not isinstance(payload, dict) or payload.get("symbol") != self.symbol:
             return None
-        exch_ts_ms = _bitstamp_ts_ms(data)
-        best_bid = _first_price(data.get("bids"))
-        best_ask = _first_price(data.get("asks"))
-        if exch_ts_ms is None or best_bid is None or best_ask is None:
+
+        value = _float_or_none(payload.get("value"))
+        exch_ts_ms = _int_or_none(payload.get("timestamp"))
+        if value is None or exch_ts_ms is None:
             return None
-        return ExchangeQuote(self.source, best_bid, best_ask, exch_ts_ms, recv_ts_ms)
 
-
-@dataclass(frozen=True, slots=True)
-class GeminiFeed:
-    source: str = "gemini"
-    url: str = "wss://ws.gemini.com"
-
-    def subscribe(self) -> dict[str, object]:
-        return {
-            "method": "subscribe",
-            "params": ["btcusd@bookTicker"],
-        }
-
-    def parse_message(self, message: dict[str, Any], recv_ts_ms: int) -> ExchangeQuote | None:
-        event_ts_ns = _float_or_none(message.get("E"))
-        best_bid = _float_or_none(message.get("b"))
-        best_ask = _float_or_none(message.get("a"))
-        if event_ts_ns is None or best_bid is None or best_ask is None:
-            return None
-        return ExchangeQuote(
-            self.source, best_bid, best_ask, int(event_ts_ns / 1_000_000), recv_ts_ms
-        )
+        return ExchangeQuote(self.source, value, value, exch_ts_ms, recv_ts_ms)
 
 
 def build_default_feeds() -> list[ExchangeFeed]:
     return [
         BybitFeed(),
-        GeminiFeed(),
+        ChainlinkFeed(),
         BinanceFeed(),
-        BitstampFeed(),
         CoinbaseFeed(),
+    ]
+
+
+def build_usdt_usd_feeds() -> list[ExchangeFeed]:
+    return [
+        CoinbaseFeed(source="coinbase_usdtusd", product_id="USDT-USD"),
+        KrakenTickerFeed(),
     ]
 
 
@@ -225,6 +265,14 @@ async def _run_feed(
 
         await asyncio.sleep(reconnect_delay_s)
         reconnect_delay_s = min(reconnect_delay_s * 2, _RECONNECT_MAX_DELAY_S)
+
+
+async def stream_usdt_usd_quotes(
+    *,
+    on_error: Callable[[str], None] | None = None,
+) -> AsyncIterator[ExchangeQuote]:
+    async for quote in stream_exchange_quotes(build_usdt_usd_feeds(), on_error=on_error):
+        yield quote
 
 
 async def _heartbeat(

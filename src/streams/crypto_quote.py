@@ -30,7 +30,7 @@ class CryptoQuoteStream:
             best_bid=round(composite.curr_price, 3),
             best_ask=round(composite.curr_price, 3),
             baseline=composite.base_price,
-            change=composite.change,
+            change=composite.diff_price,
             price=composite.curr_price,
             recv_ts_ms=composite.ts_ms,
         )
