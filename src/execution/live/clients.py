@@ -1,18 +1,19 @@
 import math
 import time
 
-from py_clob_client.client import ClobClient
-from py_clob_client.clob_types import (
+from py_clob_client_v2.client import ClobClient
+from py_clob_client_v2.clob_types import (
     ApiCreds,
     AssetType,
     BalanceAllowanceParams,
     OpenOrderParams,
     OrderArgs,
+    OrderPayload,
     OrderType,
     TradeParams,
 )
-from py_clob_client.exceptions import PolyApiException
-from py_clob_client.order_builder.constants import BUY, SELL
+from py_clob_client_v2.exceptions import PolyApiException
+from py_clob_client_v2.order_builder.constants import BUY, SELL
 
 from enums import Role
 from execution.events import MarketOrderEvent, MarketTradeEvent
@@ -41,7 +42,7 @@ class TradeClient:
         self.client.get_ok()
 
     def get_credentials(self) -> ApiCreds:
-        return self.client.create_or_derive_api_creds()
+        return self.client.create_or_derive_api_key()
 
     def buy(self, token: Token, shares: float, price: float) -> str | None:
         return self._submit_order(token=token, shares=shares, price=price, side=BUY)
@@ -122,7 +123,7 @@ class TradeClient:
     def get_orders_by_token(self, token: Token) -> list[MarketOrderEvent]:
         try:
             params = OpenOrderParams(asset_id=token.id)
-            resp = self.client.get_orders(params)
+            resp = self.client.get_open_orders(params)
             self.logger.debug("%r", resp)
         except PolyApiException as e:
             self.logger.debug("%r", e.error_msg)
@@ -194,7 +195,7 @@ class TradeClient:
         try:
             start_ns = time.perf_counter_ns()
             try:
-                resp = self.client.cancel(order_id)
+                resp = self.client.cancel_order(OrderPayload(orderID=order_id))
             finally:
                 latency_ms = (time.perf_counter_ns() - start_ns) / 1_000_000
                 self.logger.info("cancel order latency %.3f ms", latency_ms)
@@ -246,7 +247,7 @@ class TradeClient:
             submit_start_ns = time.perf_counter_ns()
             try:
                 resp = self.client.post_order(
-                    order, post_only=self.post_only, orderType=self.order_type
+                    order, post_only=self.post_only, order_type=self.order_type
                 )
                 self.logger.debug("%r", resp)
             finally:
