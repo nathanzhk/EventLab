@@ -5,11 +5,11 @@ from collections.abc import AsyncIterable, Callable
 from dataclasses import dataclass
 from typing import Literal, Protocol
 
+from bus import EventBus
 from dashboard import dashboard_component
 from datasource import CryptoQuoteEvent, CryptoQuoteStream, MarketQuoteEvent, MarketQuoteStream
 from datasource.crypto.component import crypto_quote_component
 from datasource.market.component import market_quote_component
-from event_bus import EventBus
 from execution import (
     MarketOrderEvent,
     MarketTradeEvent,

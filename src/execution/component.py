@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
-from event_bus import (
+from bus import (
     EventBus,
     OverflowPolicy,
     Subscription,

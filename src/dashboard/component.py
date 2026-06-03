@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING
 import requests
 import uvicorn
 
+from bus import EventBus, OverflowPolicy, Subscription
 from dashboard.server import app, broadcast_loop, enqueue_event, enqueue_payload, serialize_event
-from event_bus import EventBus, OverflowPolicy, Subscription
 from observation import RuntimeStateEvent
 from utils.logger import get_logger
 

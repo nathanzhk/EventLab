@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from event_bus import StreamComponent
+from bus import StreamComponent
 from execution.events import MarketOrderEvent, MarketTradeEvent
 
 if TYPE_CHECKING:

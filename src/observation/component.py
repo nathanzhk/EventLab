@@ -3,12 +3,12 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
-from datasource import CryptoQuoteEvent, MarketQuoteEvent
-from event_bus import (
+from bus import (
     EventBus,
     OverflowPolicy,
     Subscription,
 )
+from datasource import CryptoQuoteEvent, MarketQuoteEvent
 from execution import CurrentPositionEvent
 from models import Market
 from observation.runtime_state import RuntimeState
