@@ -12,8 +12,11 @@ from py_clob_client_v2.clob_types import (
     OrderType,
     TradeParams,
 )
+from py_clob_client_v2.config import get_contract_config
 from py_clob_client_v2.exceptions import PolyApiException
 from py_clob_client_v2.order_builder.constants import BUY, SELL
+from py_clob_client_v2.order_utils.exchange_order_builder_v2 import ExchangeOrderBuilderV2
+from py_clob_client_v2.order_utils.model.order_data_v2 import SignedOrderV2
 
 from enums import Role
 from execution.events import MarketOrderEvent, MarketTradeEvent
@@ -39,28 +42,51 @@ class TradeClient:
             signature_type=2,
         )
         self.client.set_api_creds(self.get_credentials())
-        self.client.get_ok()
+        self.order_builder = self.get_order_builder()
 
     def get_credentials(self) -> ApiCreds:
         return self.client.create_or_derive_api_key()
 
+    def get_order_builder(self) -> ExchangeOrderBuilderV2:
+        signer = self.client.signer
+        if signer is None:
+            raise RuntimeError("missing client signer")
+        chain_id = signer.get_chain_id()
+        contract_config = get_contract_config(chain_id)
+        exchange_address = contract_config.exchange_v2
+        return ExchangeOrderBuilderV2(exchange_address, chain_id, signer)
+
     def buy(self, token: Token, shares: float, price: float) -> str | None:
-        return self._submit_order(token=token, shares=shares, price=price, side=BUY)
-
-    def sell(self, token: Token, shares: float, price: float) -> str | None:
-        return self._submit_order(token=token, shares=shares, price=price, side=SELL)
-
-    def warm_up(self, market: Market):
+        self.logger.info("buy %s %.6f at $%.2f", token.key, shares, price)
         try:
-            for token in {market.yes_token, market.no_token}:
-                self.logger.debug("warm up %s", token.id)
-                self.client.get_neg_risk(token.id)
-                self.client.get_tick_size(token.id)
-                self.client.get_fee_rate_bps(token.id)
-            # self.client.get_market(market.id)
+            local_id, order = self._create_order(token=token, shares=shares, price=price, side=BUY)
+            self.logger.info("create order success %s", local_id)
+            order_id = self._submit_order(order)
+            self.logger.info("submit order success %s", order_id)
+            return order_id
         except PolyApiException as e:
             self.logger.debug("%r", e.error_msg)
-            self.logger.error("warm up failed: %s", _error_message(e))
+            self.logger.error("submit order failed: %s", _error_message(e))
+            return None
+
+    def sell(self, token: Token, shares: float, price: float) -> str | None:
+        self.logger.info("sell %s %.6f at $%.2f", token.key, shares, price)
+        try:
+            local_id, order = self._create_order(token=token, shares=shares, price=price, side=SELL)
+            self.logger.info("create order success %s", local_id)
+            order_id = self._submit_order(order)
+            self.logger.info("submit order success %s", order_id)
+            return order_id
+        except PolyApiException as e:
+            self.logger.debug("%r", e.error_msg)
+            self.logger.error("submit order failed: %s", _error_message(e))
+            return None
+
+    def warm_up(self, market: Market):
+        self._create_order(token=market.yes_token, shares=100, price=0.01, side=SELL)
+        self._create_order(token=market.no_token, shares=100, price=0.01, side=SELL)
+        self._create_order(token=market.yes_token, shares=100, price=0.01, side=SELL)
+        self._create_order(token=market.no_token, shares=100, price=0.01, side=SELL)
 
     def fee_rate(self, market: Market) -> float:
         if self.role == Role.MAKER:
@@ -234,46 +260,46 @@ class TradeClient:
             return 0.0
         return round(int(balance) / 1_000_000, 6)
 
-    def _submit_order(self, *, token: Token, shares: float, price: float, side: str) -> str | None:
-        self.logger.info("%s %s %.6f at $%.2f", side.lower(), token.key, shares, price)
+    def _create_order(
+        self, *, token: Token, shares: float, price: float, side: str
+    ) -> tuple[str, SignedOrderV2]:
+        create_start_ns = time.perf_counter_ns()
+        order = self.client.create_order(
+            OrderArgs(token_id=token.id, size=shares, price=price, side=side)
+        )
+        if not isinstance(order, SignedOrderV2):
+            raise RuntimeError(f"expected v2 order, got {type(order).__name__}")
+        create_latency_ms = (time.perf_counter_ns() - create_start_ns) / 1_000_000
+        self.logger.info("create order latency %.3f ms", create_latency_ms)
+        order_id = self.order_builder.build_order_hash(
+            self.order_builder.build_order_typed_data(order)
+        )
+        return order_id, order
+
+    def _submit_order(self, order: SignedOrderV2) -> str | None:
+        submit_start_ns = time.perf_counter_ns()
         try:
-            create_start_ns = time.perf_counter_ns()
-            order = self.client.create_order(
-                OrderArgs(token_id=token.id, size=shares, price=price, side=side)
+            resp = self.client.post_order(
+                order, post_only=self.post_only, order_type=self.order_type
             )
-            create_latency_ms = (time.perf_counter_ns() - create_start_ns) / 1_000_000
-            self.logger.info("create order latency %.3f ms", create_latency_ms)
+            self.logger.debug("%r", resp)
+        finally:
+            submit_latency_ms = (time.perf_counter_ns() - submit_start_ns) / 1_000_000
+            self.logger.info("submit order latency %.3f ms", submit_latency_ms)
 
-            submit_start_ns = time.perf_counter_ns()
-            try:
-                resp = self.client.post_order(
-                    order, post_only=self.post_only, order_type=self.order_type
-                )
-                self.logger.debug("%r", resp)
-            finally:
-                submit_latency_ms = (time.perf_counter_ns() - submit_start_ns) / 1_000_000
-                self.logger.info("submit order latency %.3f ms", submit_latency_ms)
-
-            if not isinstance(resp, dict):
-                self.logger.error("invalid response: %r", resp)
-                return None
-
-            if resp.get("success") is not True:
-                self.logger.error("%s", resp.get("errorMsg") or "unknown error")
-                return None
-
-            order_id = resp.get("orderID")
-            if not isinstance(order_id, str) or not order_id:
-                self.logger.error("missing order id: %r", resp)
-                return None
-
-            self.logger.info("order %s", order_id)
-            return order_id
-
-        except PolyApiException as e:
-            self.logger.debug("%r", e.error_msg)
-            self.logger.error("submit order failed: %s", _error_message(e))
+        if not isinstance(resp, dict):
+            self.logger.error("invalid response: %r", resp)
             return None
+
+        if resp.get("success") is not True:
+            self.logger.error("%s", resp.get("errorMsg") or "unknown error")
+            return None
+
+        order_id = resp.get("orderID")
+        if not isinstance(order_id, str) or not order_id:
+            self.logger.error("missing order id: %r", resp)
+            return None
+        return order_id
 
 
 class MakerTradeClient(TradeClient):
