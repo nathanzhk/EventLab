@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from typing import Literal, Protocol
 
 from datasource import CryptoQuoteEvent, CryptoQuoteStream, MarketQuoteEvent, MarketQuoteStream
+from datasource.crypto.component import crypto_quote_component
+from datasource.market.component import market_quote_component
 from event_bus import EventBus
 from execution import (
     MarketOrderEvent,
@@ -15,6 +17,7 @@ from execution.component import execution_component
 from execution.engine import ExecutionEngine
 from execution.live import MarketTradeStream
 from execution.live.clients import MakerTradeClient, TakerTradeClient
+from execution.live.component import market_trade_component
 from execution.mock import (
     PaperExchangeSimulator,
     PaperMakerTradeClient,
@@ -27,11 +30,6 @@ from observation.component import runtime_state_component
 from prediction.component import strategy_component
 from prediction.engine import StrategyEngine
 from prediction.strategy import Strategy
-from streams import (
-    crypto_quote_component,
-    market_quote_component,
-    market_trade_component,
-)
 from web import web_component
 
 ExecutionMode = Literal["live", "paper"]

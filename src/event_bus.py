@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterable, AsyncIterator
 from enum import Enum
 from typing import Any, TypeVar
 
@@ -105,6 +105,19 @@ class EventBus:
             subscription.queue.put_nowait(event)
             _log_queue_state("enqueue", subscription, event)
             return
+
+
+class StreamComponent[T]:
+    def __init__(self, *, bus: EventBus, stream: AsyncIterable[T]) -> None:
+        self._bus = bus
+        self._stream = stream
+
+    def start(self, tasks: asyncio.TaskGroup) -> None:
+        tasks.create_task(self._run())
+
+    async def _run(self) -> None:
+        async for event in self._stream:
+            await self._bus.publish(event)
 
 
 def _log_queue_state(action: str, subscription: Subscription[Any], event: object) -> None:
