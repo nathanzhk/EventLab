@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from datasource import CryptoQuoteEvent, MarketQuoteEvent
 from event_bus import EventBus
-from events import (
+from execution import (
     MarketOrderEvent,
     MarketTradeEvent,
 )

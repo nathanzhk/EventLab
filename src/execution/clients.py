@@ -15,9 +15,9 @@ from py_clob_client.exceptions import PolyApiException
 from py_clob_client.order_builder.constants import BUY, SELL
 
 from enums import Role
-from events import MarketOrderEvent, MarketTradeEvent
+from execution.events import MarketOrderEvent, MarketTradeEvent
+from execution.stream import build_order_event, build_trade_event
 from markets.base import Market, Token
-from streams import build_order_event, build_trade_event
 from utils.env import Env
 from utils.logger import get_logger
 

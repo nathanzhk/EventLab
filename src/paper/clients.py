@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 
 from enums import Role, Side
-from events import MarketOrderEvent, MarketTradeEvent
+from execution import MarketOrderEvent, MarketTradeEvent
 from markets.base import Market, Token
 from paper.simulator import PaperExchangeSimulator
 from utils.logger import get_logger

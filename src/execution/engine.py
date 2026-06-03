@@ -3,8 +3,9 @@ from __future__ import annotations
 import asyncio
 
 from enums import Side
-from events import DesiredPositionEvent, MarketOrderEvent, MarketTradeEvent
+from events import DesiredPositionEvent
 from execution.clients import TradeClient
+from execution.events import MarketOrderEvent, MarketTradeEvent
 from execution.manager import EventPublisher, ManagedOrder, OrderManager
 from markets.base import Market
 from utils.logger import get_logger

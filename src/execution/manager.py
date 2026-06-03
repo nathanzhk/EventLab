@@ -7,8 +7,9 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 from enums import ManagedOrderStatus, ManagedTradeStatus, MarketTradeStatus, Role, Side
-from events import CurrentPositionEvent, MarketOrderEvent, MarketTradeEvent
+from events import CurrentPositionEvent
 from execution.clients import TradeClient
+from execution.events import MarketOrderEvent, MarketTradeEvent
 from markets.base import Market, Token
 from utils.logger import get_logger
 from utils.notification import send_trade

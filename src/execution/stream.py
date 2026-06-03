@@ -10,7 +10,7 @@ from websockets.asyncio.client import ClientConnection, connect
 from websockets.exceptions import ConnectionClosed
 
 from enums import MarketOrderStatus, MarketOrderType, MarketTradeStatus, Role, Side
-from events import MarketOrderEvent, MarketTradeEvent
+from execution.events import MarketOrderEvent, MarketTradeEvent
 from utils.env import Env
 from utils.logger import get_logger
 from utils.time import now_ts_ms

@@ -7,9 +7,10 @@ from typing import Literal, Protocol
 
 from datasource import CryptoQuoteEvent, CryptoQuoteStream, MarketQuoteEvent, MarketQuoteStream
 from event_bus import EventBus
-from events import (
+from execution import (
     MarketOrderEvent,
     MarketTradeEvent,
+    MarketTradeStream,
 )
 from execution.clients import MakerTradeClient, TakerTradeClient
 from execution.component import execution_component
@@ -27,7 +28,6 @@ from strategy.component import strategy_component
 from strategy.engine import StrategyEngine
 from strategy.strategy import Strategy
 from streams import (
-    MarketTradeStream,
     crypto_quote_component,
     market_quote_component,
     market_trade_component,

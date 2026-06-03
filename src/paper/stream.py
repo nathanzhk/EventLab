@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 
-from events import MarketOrderEvent, MarketTradeEvent
+from execution import MarketOrderEvent, MarketTradeEvent
 from paper.simulator import PaperExchangeSimulator
 
 
