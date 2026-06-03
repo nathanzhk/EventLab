@@ -5,6 +5,7 @@ from collections.abc import AsyncIterable, Callable
 from dataclasses import dataclass
 from typing import Literal, Protocol
 
+from dashboard import dashboard_component
 from datasource import CryptoQuoteEvent, CryptoQuoteStream, MarketQuoteEvent, MarketQuoteStream
 from datasource.crypto.component import crypto_quote_component
 from datasource.market.component import market_quote_component
@@ -30,7 +31,6 @@ from observation.component import runtime_state_component
 from prediction.component import strategy_component
 from prediction.engine import StrategyEngine
 from prediction.strategy import Strategy
-from web import web_component
 
 ExecutionMode = Literal["live", "paper"]
 
@@ -117,7 +117,7 @@ class Runtime:
         self._register_component(market_trade_component())
         self._register_component(crypto_quote_component())
         self._register_component(runtime_state_component())
-        self._register_component(web_component())
+        self._register_component(dashboard_component())
 
     def _register_component(self, factory: ComponentFactory) -> None:
         self._component_factories.append(factory)

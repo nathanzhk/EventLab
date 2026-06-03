@@ -8,21 +8,21 @@ from typing import TYPE_CHECKING
 import requests
 import uvicorn
 
+from dashboard.server import app, broadcast_loop, enqueue_event, enqueue_payload, serialize_event
 from event_bus import EventBus, OverflowPolicy, Subscription
 from observation import RuntimeStateEvent
 from utils.logger import get_logger
-from web.server import app, broadcast_loop, enqueue_event, enqueue_payload, serialize_event
 
 if TYPE_CHECKING:
     from app import ComponentFactory
 
-logger = get_logger("WEB")
+logger = get_logger("DASHBOARD")
 
 _DEFAULT_PORT = 8177
 _HOST = "0.0.0.0"
 
 
-class WebComponent:
+class DashboardComponent:
     def __init__(self, *, bus: EventBus, port: int = _DEFAULT_PORT) -> None:
         self._bus = bus
         self._port = port
@@ -30,7 +30,7 @@ class WebComponent:
     def start(self, tasks: asyncio.TaskGroup) -> None:
         state_events = self._bus.subscribe(
             RuntimeStateEvent,
-            name="web.runtime-state",
+            name="dashboard.runtime-state",
             maxsize=200,
             overflow=OverflowPolicy.DROP_OLDEST,
         )
@@ -42,7 +42,7 @@ class WebComponent:
             await self._run_server(events, sock)
             return
 
-        logger.info("port %d in use; forwarding web state to existing dashboard", self._port)
+        logger.info("port %d in use; forwarding dashboard state to existing dashboard", self._port)
         async for event in events:
             payload = serialize_event(event)
             if await self._forward_payload(payload):
@@ -118,5 +118,5 @@ class WebComponent:
             raise
 
 
-def web_component() -> ComponentFactory:
-    return lambda context: WebComponent(bus=context.bus)
+def dashboard_component() -> ComponentFactory:
+    return lambda context: DashboardComponent(bus=context.bus)
