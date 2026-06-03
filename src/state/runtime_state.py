@@ -5,10 +5,8 @@ import dataclasses
 from typing import Any, Literal
 
 from datasource import CryptoQuoteEvent, MarketQuoteEvent
-from events import (
-    CurrentPositionEvent,
-    RuntimeStateEvent,
-)
+from events import RuntimeStateEvent
+from execution import CurrentPositionEvent
 from markets.base import Market
 from utils.logger import get_logger
 from utils.time import elapsed_ms_since, fmt_duration_s, now_ts_s

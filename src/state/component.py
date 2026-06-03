@@ -9,7 +9,7 @@ from event_bus import (
     OverflowPolicy,
     Subscription,
 )
-from events import CurrentPositionEvent
+from execution import CurrentPositionEvent
 from markets.base import Market
 from state.runtime_state import RuntimeState
 

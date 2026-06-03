@@ -4,7 +4,8 @@ from dataclasses import dataclass
 from enum import IntEnum
 
 from datasource import MarketQuoteEvent
-from events import CurrentPositionEvent, RuntimeStateEvent
+from events import RuntimeStateEvent
+from execution import CurrentPositionEvent
 from markets.base import Market, Token
 from strategy.events import DesiredPositionEvent
 from utils.logger import get_logger
