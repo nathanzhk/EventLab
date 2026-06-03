@@ -13,9 +13,6 @@ class Env:
     TELEGRAM_CHAT_ID: str
     TELEGRAM_API_BASE_URL: str
 
-    POLY_BACKTEST_KEY: str
-    POLY_BACKTEST_BASE_URL: str
-
     BINANCE_WS_BASE_URL: str
     BINANCE_API_BASE_URL: str
 
@@ -36,9 +33,6 @@ class Env:
         cls.TELEGRAM_BOT_KEY = _env_str("TELEGRAM_BOT_KEY")
         cls.TELEGRAM_CHAT_ID = _env_str("TELEGRAM_CHAT_ID")
         cls.TELEGRAM_API_BASE_URL = _env_str("TELEGRAM_API_BASE_URL")
-
-        cls.POLY_BACKTEST_KEY = _env_str("POLY_BACKTEST_KEY")
-        cls.POLY_BACKTEST_BASE_URL = _env_str("POLY_BACKTEST_BASE_URL")
 
         cls.BINANCE_WS_BASE_URL = _env_str("BINANCE_WS_BASE_URL")
         cls.BINANCE_API_BASE_URL = _env_str("BINANCE_API_BASE_URL")
