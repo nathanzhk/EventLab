@@ -13,12 +13,12 @@ from .time import fmt_ts_s
 
 _LOG_DIR = Path(__file__).resolve().parents[2] / "logs"
 _LOG_FORMAT = "%(asctime)s [%(levelname)s] [%(name)s] %(message)s"
-_MARKET_LOGGER_NAMES = frozenset(
+_QUOTE_LOGGER_NAMES = frozenset(
     {
         "STATE",
         "MARKET QUOTE",
-        "MARKET TRADE",
         "CRYPTO QUOTE",
+        "BINANCE QUOTE",
     }
 )
 _TRADE_LOGGER_NAMES = frozenset(
@@ -30,6 +30,7 @@ _TRADE_LOGGER_NAMES = frozenset(
         "PAPER",
         "PAPER-MAKER",
         "PAPER-TAKER",
+        "MARKET TRADE",
     }
 )
 
@@ -208,12 +209,12 @@ def _stop_queue_listener() -> None:
 
 def _build_log_file(name: str, ts: datetime) -> Path:
     safe_name = _sanitize_log_name(name)
-    return _LOG_DIR / ts.strftime("%Y%m%d") / f"{ts.strftime('%Y%m%d_%H%M%S')}-{safe_name}.log"
+    return _LOG_DIR / ts.strftime("%Y%m%d") / f"{safe_name}.log"
 
 
 def _route_log_file(base_log_file: Path, logger_name: str) -> Path:
-    if logger_name in _MARKET_LOGGER_NAMES:
-        return base_log_file.with_suffix(".market.log")
+    if logger_name in _QUOTE_LOGGER_NAMES:
+        return base_log_file.with_suffix(".quote.log")
     if logger_name in _TRADE_LOGGER_NAMES:
         return base_log_file.with_suffix(".trade.log")
     return base_log_file

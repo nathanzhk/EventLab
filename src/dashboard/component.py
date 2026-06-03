@@ -78,6 +78,7 @@ class DashboardComponent:
             app,
             host=_HOST,
             port=self._port,
+            log_config=None,
             log_level="warning",
             lifespan="off",
         )

@@ -46,7 +46,7 @@ class BinanceQuoteStream:
                     max_queue=2048,
                     max_size=None,
                 ) as ws:
-                    logger.info("connected market quote websocket")
+                    logger.info("connected binance quote websocket")
                     async for raw in ws:
                         try:
                             message = orjson.loads(raw)
@@ -60,7 +60,7 @@ class BinanceQuoteStream:
             except asyncio.CancelledError:
                 raise
             except (ConnectionClosed, ConnectionError, OSError) as e:
-                logger.error("disconnected market quote websocket: %s", e)
+                logger.error("disconnected binance quote websocket: %s", e)
                 await asyncio.sleep(_RECONNECT_DELAY_S)
 
     def _build_event(self, message: dict) -> BinanceQuote | None:
