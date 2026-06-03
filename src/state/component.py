@@ -3,13 +3,13 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
-from datasource import MarketQuoteEvent
+from datasource import CryptoQuoteEvent, MarketQuoteEvent
 from event_bus import (
     EventBus,
     OverflowPolicy,
     Subscription,
 )
-from events import CryptoQuoteEvent, CurrentPositionEvent
+from events import CurrentPositionEvent
 from markets.base import Market
 from state.runtime_state import RuntimeState
 
