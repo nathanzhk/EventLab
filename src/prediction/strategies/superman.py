@@ -45,7 +45,7 @@ class SupermanStrategy:
         no_quote = state.no_token_quote
         market = state.market
 
-        btc_diff = state.crypto_quote.change
+        btc_diff = state.crypto_quote.diff_price
 
         elapsed_s = _elapsed_s(market, now_ts_ms())
 

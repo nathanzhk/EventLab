@@ -99,7 +99,7 @@ class Runtime:
             paper_simulator=paper_simulator,
             market_quote_stream=MarketQuoteStream(market),
             market_trade_stream=market_trade_stream,
-            crypto_quote_stream=CryptoQuoteStream(symbol),
+            crypto_quote_stream=CryptoQuoteStream(symbol=symbol, market=market),
         )
         self._register_components()
 

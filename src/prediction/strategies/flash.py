@@ -55,7 +55,7 @@ class FlashStrategy:
 
         # Record BTC price (first seen per second — avoids intra-second spike overwrite)
         if elapsed_s not in self._btc_by_s:
-            self._btc_by_s[elapsed_s] = state.crypto_quote.mid
+            self._btc_by_s[elapsed_s] = state.crypto_quote.curr_price
 
         position = None
         if state.yes_token_position is not None and state.yes_token_position.is_active:

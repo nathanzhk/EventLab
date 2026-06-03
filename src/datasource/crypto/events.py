@@ -9,22 +9,12 @@ class CryptoQuoteEvent:
     recv_ts_ms: int
     best_bid: float
     best_ask: float
-    win_price: float
     curr_price: float
+    base_price: float | None
     recv_mono_ns: int = field(default_factory=perf_counter_ns)
 
     @property
-    def baseline(self) -> float:
-        return self.win_price
-
-    @property
-    def change(self) -> float:
-        return self.curr_price - self.win_price
-
-    @property
-    def price(self) -> float:
-        return self.curr_price
-
-    @property
-    def mid(self) -> float:
-        return round(self.curr_price, 3)
+    def diff_price(self) -> float | None:
+        if self.base_price is None:
+            return None
+        return self.curr_price - self.base_price

@@ -2,19 +2,35 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 
+import orjson
+import requests
+
+from models import Market
+from utils.env import Env
+from utils.logger import get_logger
+from utils.time import now_ts_ms
+
 from .binance import BinanceQuote, BinanceQuoteStream
 from .events import CryptoQuoteEvent
 
-WINDOW_MS = 300_000
 MIN_EMIT_INTERVAL_MS = 1
+
+logger = get_logger("CRYPTO QUOTE")
 
 
 class CryptoQuoteStream:
-    def __init__(self, symbol: str) -> None:
+    def __init__(self, symbol: str, market: Market) -> None:
+        self._market = market
         self._binance_feed = BinanceQuoteStream(symbol)
+        self._started_before_market = now_ts_ms() < market.start_ts_ms
         self._last_emit_ts_ms: int | None = None
-        self._window_start_ms: int | None = None
-        self._window_price: float | None = None
+        self._base_price: float | None = None
+
+        if not self._started_before_market:
+            self._base_price = _load_api_base_price(
+                symbol=symbol,
+                start_ts_ms=self._market.start_ts_ms,
+            )
 
     def __aiter__(self) -> AsyncIterator[CryptoQuoteEvent]:
         return self._events()
@@ -31,15 +47,60 @@ class CryptoQuoteStream:
                 return None
         self._last_emit_ts_ms = quote.recv_ts_ms
 
-        window_start_ms = quote.recv_ts_ms - (quote.recv_ts_ms % WINDOW_MS)
-        if self._window_start_ms != window_start_ms:
-            self._window_start_ms = window_start_ms
-            self._window_price = quote.mid
+        if (
+            self._started_before_market
+            and self._base_price is None
+            and quote.recv_ts_ms >= self._market.start_ts_ms
+        ):
+            self._base_price = quote.mid
 
         return CryptoQuoteEvent(
             recv_ts_ms=quote.recv_ts_ms,
             best_bid=quote.best_bid,
             best_ask=quote.best_ask,
-            win_price=self._window_price,
             curr_price=quote.mid,
+            base_price=self._base_price,
         )
+
+
+def _load_api_base_price(*, symbol: str, start_ts_ms: int) -> float | None:
+    rest_base_price = _get_api_base_price(
+        symbol=symbol,
+        start_ts_ms=start_ts_ms,
+    )
+    if rest_base_price is None:
+        return None
+
+    logger.info(
+        "loaded api base price symbol=%s start_ts_ms=%d price=%.2f",
+        symbol,
+        start_ts_ms,
+        rest_base_price,
+    )
+    return rest_base_price
+
+
+def _get_api_base_price(*, symbol: str, start_ts_ms: int) -> float | None:
+    try:
+        response = requests.get(
+            f"{Env.BINANCE_API_BASE_URL}/klines",
+            params={
+                "symbol": symbol,
+                "interval": "1s",
+                "startTime": start_ts_ms,
+                "limit": 1,
+            },
+            timeout=(1, 3),
+        )
+        response.raise_for_status()
+    except requests.RequestException as e:
+        logger.error("get api base price failed: %s", e)
+        return None
+
+    try:
+        payload = orjson.loads(response.content)
+        kline = payload[0]
+        return float(kline[1])
+    except (IndexError, TypeError, ValueError, orjson.JSONDecodeError) as e:
+        logger.error("invalid api base price response: %s", e)
+        return None

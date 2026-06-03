@@ -96,11 +96,11 @@ class RuntimeState:
             self._crypto_quote = quote
             state_event = self._event_if_changed("crypto_quote")
         logger.debug(
-            "latency=%.2fms price=%.2f baseline=%s change=%s",
+            "latency=%.2fms price=%.2f base=%s diff=%s",
             elapsed_ms_since(quote.recv_mono_ns),
-            quote.mid,
-            _fmt_optional_usd(quote.baseline),
-            _fmt_optional_signed_usd(quote.change),
+            quote.curr_price,
+            _fmt_optional_usd(quote.base_price),
+            _fmt_optional_signed_usd(quote.diff_price),
         )
         return state_event
 
@@ -128,7 +128,7 @@ class RuntimeState:
         self.indicators.update(
             yes_mid=event.yes_token_quote.mid,
             no_mid=event.no_token_quote.mid,
-            btc_change=event.crypto_quote.change,
+            btc_change=event.crypto_quote.diff_price,
         )
         event = dataclasses.replace(
             event,
@@ -166,9 +166,9 @@ def _event_signature(event: RuntimeStateEvent) -> tuple[Any, ...]:
         (
             event.crypto_quote.best_bid,
             event.crypto_quote.best_ask,
-            event.crypto_quote.baseline,
-            event.crypto_quote.change,
-            event.crypto_quote.price,
+            event.crypto_quote.base_price,
+            event.crypto_quote.diff_price,
+            event.crypto_quote.curr_price,
         ),
         (
             event.yes_token_position.opening_shares,
@@ -208,8 +208,8 @@ def _log_event(event: RuntimeStateEvent) -> None:
         event.yes_token_quote.best_ask,
         event.no_token_quote.best_bid,
         event.no_token_quote.best_ask,
-        event.crypto_quote.mid,
-        _fmt_optional_signed_usd(event.crypto_quote.change),
+        event.crypto_quote.curr_price,
+        _fmt_optional_signed_usd(event.crypto_quote.diff_price),
     )
     logger.info(
         "UP | open %.6f | open settling %.6f | close %.6f | close settling %.6f",
