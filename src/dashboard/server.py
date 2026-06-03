@@ -106,7 +106,6 @@ def _serialize_state(event: RuntimeStateEvent) -> dict[str, Any]:
         "yes_quote": _serialize_quote(event.yes_token_quote),
         "no_quote": _serialize_quote(event.no_token_quote),
         "crypto": {
-            "symbol": event.crypto_quote.symbol,
             "baseline": event.crypto_quote.baseline,
             "change": event.crypto_quote.change,
             "price": event.crypto_quote.price,

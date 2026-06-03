@@ -96,9 +96,8 @@ class RuntimeState:
             self._crypto_quote = quote
             state_event = self._event_if_changed("crypto_quote")
         logger.debug(
-            "latency=%.2fms symbol=%s price=%.2f baseline=%s change=%s",
+            "latency=%.2fms price=%.2f baseline=%s change=%s",
             elapsed_ms_since(quote.recv_mono_ns),
-            quote.symbol,
             quote.mid,
             _fmt_optional_usd(quote.baseline),
             _fmt_optional_signed_usd(quote.change),
