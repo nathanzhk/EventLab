@@ -1,6 +1,6 @@
-from .crypto.event import CryptoQuoteEvent
+from .crypto.events import CryptoQuoteEvent
 from .crypto.feed import CryptoQuoteStream
-from .market.event import MarketQuoteEvent
+from .market.events import MarketQuoteEvent
 from .market.feed import MarketQuoteStream
 
 __all__ = [

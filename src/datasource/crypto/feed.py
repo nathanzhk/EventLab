@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 
 from .binance import BinanceQuote, BinanceQuoteStream
-from .event import CryptoQuoteEvent
+from .events import CryptoQuoteEvent
 
 WINDOW_MS = 300_000
 MIN_EMIT_INTERVAL_MS = 1

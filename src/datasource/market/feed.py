@@ -11,7 +11,7 @@ from models import Market
 from utils.env import Env
 from utils.logger import get_logger
 
-from .event import MarketQuoteEvent
+from .events import MarketQuoteEvent
 
 _RECONNECT_DELAY_S = 2
 _PING_INTERVAL_S = 10

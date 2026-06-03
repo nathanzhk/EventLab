@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from bus import StreamComponent
-from datasource.crypto.event import CryptoQuoteEvent
+from datasource.crypto.events import CryptoQuoteEvent
 
 if TYPE_CHECKING:
     from app import ComponentFactory

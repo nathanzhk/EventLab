@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import TextIO
 
-from .event import CryptoQuoteEvent
+from .events import CryptoQuoteEvent
 from .feed import WINDOW_MS, CryptoQuoteStream
 
 CSV_HEADER = ["recv_ts_ms", "best_bid", "best_ask", "win_price", "curr_price"]
