@@ -24,9 +24,9 @@ from paper import (
     PaperTradeStream,
     paper_match_component,
 )
-from strategy.component import strategy_component
-from strategy.engine import StrategyEngine
-from strategy.strategy import Strategy
+from prediction.component import strategy_component
+from prediction.engine import StrategyEngine
+from prediction.strategy import Strategy
 from streams import (
     crypto_quote_component,
     market_quote_component,

@@ -7,7 +7,7 @@ from execution.clients import TradeClient
 from execution.events import MarketOrderEvent, MarketTradeEvent
 from execution.manager import EventPublisher, ManagedOrder, OrderManager
 from markets.base import Market
-from strategy.events import DesiredPositionEvent
+from prediction.events import DesiredPositionEvent
 from utils.logger import get_logger
 from utils.time import now_ts_ms
 

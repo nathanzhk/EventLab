@@ -6,7 +6,7 @@ from datasource import MarketQuoteEvent
 from execution import CurrentPositionEvent
 from markets.base import Market, Token
 from observation import RuntimeStateEvent
-from strategy.events import DesiredPositionEvent
+from prediction.events import DesiredPositionEvent
 from utils.logger import get_logger
 from utils.time import now_ts_ms
 

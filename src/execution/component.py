@@ -10,7 +10,7 @@ from event_bus import (
 )
 from execution.engine import ExecutionEngine
 from execution.events import MarketOrderEvent, MarketTradeEvent
-from strategy.events import DesiredPositionEvent
+from prediction.events import DesiredPositionEvent
 
 if TYPE_CHECKING:
     from app import ComponentFactory

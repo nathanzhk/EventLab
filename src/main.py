@@ -8,8 +8,8 @@ from pathlib import Path
 from app import ExecutionMode, Runtime
 from markets.btc import BTC5mMarket
 from markets.polymarket import get_crypto_price_result
-from strategies.production.dual_buy import DualBuyStrategy
-from strategy.strategy import DefaultStrategy
+from prediction.strategies.dual_buy import DualBuyStrategy
+from prediction.strategy import DefaultStrategy
 from utils.env import Env
 from utils.logger import configure_logging, get_logger, set_log_file
 from utils.time import sleep_until

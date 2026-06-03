@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from markets.base import Market
 from observation import RuntimeStateEvent
-from strategy.events import DesiredPositionEvent
+from prediction.events import DesiredPositionEvent
 from utils.logger import get_logger
 from utils.time import now_ts_ms
 

@@ -9,7 +9,7 @@ from event_bus import (
     Subscription,
 )
 from observation import RuntimeStateEvent
-from strategy.engine import StrategyEngine
+from prediction.engine import StrategyEngine
 
 if TYPE_CHECKING:
     from app import ComponentFactory

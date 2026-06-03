@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from typing import Protocol
 
 from observation import RuntimeStateEvent
-from strategy.events import DesiredPositionEvent
+from prediction.events import DesiredPositionEvent
 from utils.logger import get_logger
 
 logger = get_logger("DEFAULT STRATEGY")
