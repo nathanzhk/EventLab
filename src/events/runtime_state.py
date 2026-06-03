@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from time import perf_counter_ns
 from typing import Literal
 
-from events.crypto_quote import CryptoQuoteEvent
+from datasource import CryptoQuoteEvent
 from events.current_position import CurrentPositionEvent
 from events.market_quote import MarketQuoteEvent
 from markets.base import Market
