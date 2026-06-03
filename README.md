@@ -8,12 +8,6 @@ PYTHONPATH=src uv run python -m main
 ```
 
 ```bash
-cd datasource
-npm install
-npm run dev -- --dashboard
-```
-
-```bash
 uv run pre-commit run --all-files
 uv run pre-commit run --files src/utils/time.py
 ```
