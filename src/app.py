@@ -26,7 +26,7 @@ from execution.mock import (
     PaperTradeStream,
     paper_match_component,
 )
-from markets.base import Market
+from models import Market
 from observation.component import runtime_state_component
 from prediction.component import strategy_component
 from prediction.engine import StrategyEngine

@@ -6,7 +6,7 @@ from typing import Any, Literal
 
 from datasource import CryptoQuoteEvent, MarketQuoteEvent
 from execution import CurrentPositionEvent
-from markets.base import Market
+from models import Market
 from observation.events import RuntimeStateEvent
 from utils.logger import get_logger
 from utils.time import elapsed_ms_since, fmt_duration_s, now_ts_s

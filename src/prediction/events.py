@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from markets.base import Market, Token
+from models import Market, Token
 
 
 @dataclass(slots=True, frozen=True)

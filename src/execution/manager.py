@@ -9,7 +9,7 @@ from typing import Any, Protocol
 from enums import ManagedOrderStatus, ManagedTradeStatus, MarketTradeStatus, Role, Side
 from execution.events import CurrentPositionEvent, MarketOrderEvent, MarketTradeEvent
 from execution.live.clients import TradeClient
-from markets.base import Market, Token
+from models import Market, Token
 from utils.logger import get_logger
 from utils.notification import send_trade
 from utils.time import now_ts_ms

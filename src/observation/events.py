@@ -6,7 +6,7 @@ from typing import Literal
 
 from datasource import CryptoQuoteEvent, MarketQuoteEvent
 from execution import CurrentPositionEvent
-from markets.base import Market
+from models import Market
 from utils.time import now_ts_ms
 
 Side = Literal["UP", "DOWN"] | None

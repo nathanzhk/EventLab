@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from time import perf_counter_ns
 
-from markets.base import Market, Token
+from models import Market, Token
 from utils.time import now_ts_ms
 
 

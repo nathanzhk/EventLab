@@ -10,7 +10,7 @@ from event_bus import (
     Subscription,
 )
 from execution import CurrentPositionEvent
-from markets.base import Market
+from models import Market
 from observation.runtime_state import RuntimeState
 
 if TYPE_CHECKING:

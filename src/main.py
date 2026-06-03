@@ -6,8 +6,8 @@ import sys
 from pathlib import Path
 
 from app import ExecutionMode, Runtime
-from markets.btc import BTC5mMarket
-from markets.polymarket import get_crypto_price_result
+from models import BTC5mMarket
+from polymarket import get_crypto_price_result
 from prediction.strategies.dual_buy import DualBuyStrategy
 from prediction.strategy import DefaultStrategy
 from utils.env import Env

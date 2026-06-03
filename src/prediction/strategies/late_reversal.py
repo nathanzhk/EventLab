@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from markets.base import Market
+from models import Market
 from observation import RuntimeStateEvent
 from prediction.events import DesiredPositionEvent
 from utils.logger import get_logger
