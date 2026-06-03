@@ -200,10 +200,11 @@ def _log_event(event: RuntimeStateEvent) -> None:
         elapsed_ms_since(event.no_token_quote.recv_mono_ns),
         elapsed_ms_since(event.crypto_quote.recv_mono_ns),
     )
+    elapsed_s, remaining_s = _market_elapsed_remaining_s(event)
     logger.info(
         "[%s-%s] ▲ bid %.2f ask %.2f | ▼ bid %.2f ask %.2f | $%.2f %s",
-        fmt_duration_s(now_ts_s() - event.market.start_ts_s),
-        fmt_duration_s(event.market.end_ts_s - now_ts_s()),
+        fmt_duration_s(elapsed_s),
+        fmt_duration_s(remaining_s),
         event.yes_token_quote.best_bid,
         event.yes_token_quote.best_ask,
         event.no_token_quote.best_bid,
@@ -245,6 +246,11 @@ def _log_event(event: RuntimeStateEvent) -> None:
         ),
         _fmt_signed_usd(event.no_token_position.realized_pnl),
     ) if event.no_token_position is not None else ...
+
+
+def _market_elapsed_remaining_s(event: RuntimeStateEvent) -> tuple[int, int]:
+    market_ts_s = min(max(now_ts_s(), event.market.start_ts_s), event.market.end_ts_s)
+    return market_ts_s - event.market.start_ts_s, event.market.end_ts_s - market_ts_s
 
 
 def _fmt_signed_usd(value: float) -> str:
