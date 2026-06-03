@@ -3,13 +3,14 @@ from __future__ import annotations
 import asyncio
 
 from enums import Side
-from execution.events import MarketOrderEvent, MarketTradeEvent
-from execution.live.clients import TradeClient
-from execution.manager import EventPublisher, ManagedOrder, OrderManager
 from models import Market
 from prediction.events import DesiredPositionEvent
 from utils.logger import get_logger
 from utils.time import now_ts_ms
+
+from .events import MarketOrderEvent, MarketTradeEvent
+from .live import TradeClient
+from .manager import EventPublisher, ManagedOrder, OrderManager
 
 logger = get_logger("TRADE")
 

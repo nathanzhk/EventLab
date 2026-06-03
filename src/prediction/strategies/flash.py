@@ -3,11 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import IntEnum
 
-from datasource import MarketQuoteEvent
-from execution import CurrentPositionEvent
+from datasource.market import MarketQuoteEvent
+from execution.events import CurrentPositionEvent
 from models import Market, Token
 from prediction.events import DesiredPositionEvent
-from runtime import RuntimeStateEvent
+from runtime.events import RuntimeStateEvent
 from utils.logger import get_logger
 from utils.time import now_ts_ms
 

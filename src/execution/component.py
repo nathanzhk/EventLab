@@ -8,9 +8,10 @@ from bus import (
     OverflowPolicy,
     Subscription,
 )
-from execution.engine import ExecutionEngine
-from execution.events import MarketOrderEvent, MarketTradeEvent
 from prediction.events import DesiredPositionEvent
+
+from .engine import ExecutionEngine
+from .events import MarketOrderEvent, MarketTradeEvent
 
 if TYPE_CHECKING:
     from app import ComponentFactory

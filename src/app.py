@@ -6,19 +6,26 @@ from dataclasses import dataclass
 from typing import Literal, Protocol
 
 from bus import EventBus
-from dashboard import dashboard_component
-from datasource import CryptoQuoteEvent, CryptoQuoteStream, MarketQuoteEvent, MarketQuoteStream
-from datasource.crypto.component import crypto_quote_component
-from datasource.market.component import market_quote_component
-from execution import (
-    MarketOrderEvent,
-    MarketTradeEvent,
+from dashboard.component import dashboard_component
+from datasource.crypto import (
+    CryptoQuoteEvent,
+    CryptoQuoteStream,
+    crypto_quote_component,
+)
+from datasource.market import (
+    MarketQuoteEvent,
+    MarketQuoteStream,
+    market_quote_component,
 )
 from execution.component import execution_component
 from execution.engine import ExecutionEngine
-from execution.live import MarketTradeStream
-from execution.live.clients import MakerTradeClient, TakerTradeClient
-from execution.live.component import market_trade_component
+from execution.events import MarketOrderEvent, MarketTradeEvent
+from execution.live import (
+    MakerTradeClient,
+    MarketTradeStream,
+    TakerTradeClient,
+    market_trade_component,
+)
 from execution.mock import (
     PaperExchangeSimulator,
     PaperMakerTradeClient,

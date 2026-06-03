@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 
-from execution import MarketOrderEvent, MarketTradeEvent
-from execution.mock.simulator import PaperExchangeSimulator
+from execution.events import MarketOrderEvent, MarketTradeEvent
+
+from .simulator import PaperExchangeSimulator
 
 
 class PaperTradeStream:

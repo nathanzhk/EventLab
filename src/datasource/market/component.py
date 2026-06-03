@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from bus import StreamComponent
-from datasource.market.events import MarketQuoteEvent
+
+from .events import MarketQuoteEvent
 
 if TYPE_CHECKING:
     from app import ComponentFactory

@@ -3,10 +3,11 @@ from __future__ import annotations
 import math
 
 from enums import Role, Side
-from execution import MarketOrderEvent, MarketTradeEvent
-from execution.mock.simulator import PaperExchangeSimulator
+from execution.events import MarketOrderEvent, MarketTradeEvent
 from models import Market, Token
 from utils.logger import get_logger
+
+from .simulator import PaperExchangeSimulator
 
 
 class PaperTradeClient:

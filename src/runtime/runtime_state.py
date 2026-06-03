@@ -4,12 +4,14 @@ import asyncio
 import dataclasses
 from typing import Any, Literal
 
-from datasource import CryptoQuoteEvent, MarketQuoteEvent
-from execution import CurrentPositionEvent
+from datasource.crypto import CryptoQuoteEvent
+from datasource.market import MarketQuoteEvent
+from execution.events import CurrentPositionEvent
 from models import Market
-from runtime.events import RuntimeStateEvent
 from utils.logger import get_logger
 from utils.time import elapsed_ms_since, fmt_duration_s, now_ts_s
+
+from .events import RuntimeStateEvent
 
 logger = get_logger("STATE")
 

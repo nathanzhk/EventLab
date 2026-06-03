@@ -5,9 +5,9 @@ import threading
 import uuid
 from dataclasses import dataclass, field
 
-from datasource import MarketQuoteEvent
+from datasource.market import MarketQuoteEvent
 from enums import MarketOrderStatus, MarketOrderType, MarketTradeStatus, Role, Side
-from execution import MarketOrderEvent, MarketTradeEvent
+from execution.events import MarketOrderEvent, MarketTradeEvent
 from models import Token
 from utils.logger import get_logger
 from utils.time import now_ts_ms

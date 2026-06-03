@@ -8,8 +8,8 @@ from logging.handlers import QueueHandler, QueueListener
 from pathlib import Path
 from threading import RLock
 
-from utils.env import Env
-from utils.time import fmt_ts_s
+from .env import Env
+from .time import fmt_ts_s
 
 _LOG_DIR = Path(__file__).resolve().parents[2] / "logs"
 _LOG_FORMAT = "%(asctime)s [%(levelname)s] [%(name)s] %(message)s"

@@ -7,8 +7,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import TextIO
 
-from .events import CryptoQuoteEvent
-from .feed import WINDOW_MS, CryptoQuoteStream
+from datasource.crypto import CryptoQuoteEvent, CryptoQuoteStream
+
+WINDOW_MS = 300_000
 
 CSV_HEADER = ["recv_ts_ms", "best_bid", "best_ask", "win_price", "curr_price"]
 PROJECT_ROOT = Path(__file__).resolve().parents[3]

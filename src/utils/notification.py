@@ -1,7 +1,7 @@
 import requests
 
-from utils.env import Env
-from utils.time import fmt_ts_ms
+from .env import Env
+from .time import fmt_ts_ms
 
 
 def send_trade(market_start_ms, market_end_ms, side, token, shares, price, amount, pnl=None):

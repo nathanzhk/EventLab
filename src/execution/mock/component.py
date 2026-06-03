@@ -4,8 +4,9 @@ import asyncio
 from typing import TYPE_CHECKING
 
 from bus import EventBus, OverflowPolicy, Subscription
-from datasource import MarketQuoteEvent
-from execution.mock.simulator import PaperExchangeSimulator
+from datasource.market import MarketQuoteEvent
+
+from .simulator import PaperExchangeSimulator
 
 if TYPE_CHECKING:
     from app import ComponentFactory

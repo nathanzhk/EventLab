@@ -16,10 +16,11 @@ from py_clob_client.order_builder.constants import BUY, SELL
 
 from enums import Role
 from execution.events import MarketOrderEvent, MarketTradeEvent
-from execution.live.stream import build_order_event, build_trade_event
 from models import Market, Token
 from utils.env import Env
 from utils.logger import get_logger
+
+from .stream import build_order_event, build_trade_event
 
 
 class TradeClient:
