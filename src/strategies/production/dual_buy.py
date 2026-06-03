@@ -3,8 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from datasource import MarketQuoteEvent
-from events import CurrentPositionEvent, DesiredPositionEvent, RuntimeStateEvent
+from events import CurrentPositionEvent, RuntimeStateEvent
 from markets.base import Market, Token
+from strategy.events import DesiredPositionEvent
 from utils.logger import get_logger
 from utils.time import now_ts_ms
 
