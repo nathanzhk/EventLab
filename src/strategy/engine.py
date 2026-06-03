@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from state import RuntimeStateEvent
+from observation import RuntimeStateEvent
 from strategy.strategy import Strategy, StrategyOutput
 
 

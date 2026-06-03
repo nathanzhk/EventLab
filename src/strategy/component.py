@@ -8,7 +8,7 @@ from event_bus import (
     OverflowPolicy,
     Subscription,
 )
-from state import RuntimeStateEvent
+from observation import RuntimeStateEvent
 from strategy.engine import StrategyEngine
 
 if TYPE_CHECKING:

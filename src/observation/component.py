@@ -11,7 +11,7 @@ from event_bus import (
 )
 from execution import CurrentPositionEvent
 from markets.base import Market
-from state.runtime_state import RuntimeState
+from observation.runtime_state import RuntimeState
 
 if TYPE_CHECKING:
     from app import ComponentFactory

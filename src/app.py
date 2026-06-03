@@ -16,6 +16,7 @@ from execution.clients import MakerTradeClient, TakerTradeClient
 from execution.component import execution_component
 from execution.engine import ExecutionEngine
 from markets.base import Market
+from observation.component import runtime_state_component
 from paper import (
     PaperExchangeSimulator,
     PaperMakerTradeClient,
@@ -23,7 +24,6 @@ from paper import (
     PaperTradeStream,
     paper_match_component,
 )
-from state.component import runtime_state_component
 from strategy.component import strategy_component
 from strategy.engine import StrategyEngine
 from strategy.strategy import Strategy

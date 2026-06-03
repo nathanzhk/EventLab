@@ -8,7 +8,7 @@ import orjson
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 
-from state import RuntimeStateEvent
+from observation import RuntimeStateEvent
 
 app = FastAPI()
 

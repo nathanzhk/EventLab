@@ -9,7 +9,7 @@ import requests
 import uvicorn
 
 from event_bus import EventBus, OverflowPolicy, Subscription
-from state import RuntimeStateEvent
+from observation import RuntimeStateEvent
 from utils.logger import get_logger
 from web.server import app, broadcast_loop, enqueue_event, enqueue_payload, serialize_event
 

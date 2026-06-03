@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Protocol
 
-from state import RuntimeStateEvent
+from observation import RuntimeStateEvent
 from strategy.events import DesiredPositionEvent
 from utils.logger import get_logger
 
