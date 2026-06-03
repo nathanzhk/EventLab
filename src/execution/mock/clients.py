@@ -4,8 +4,8 @@ import math
 
 from enums import Role, Side
 from execution import MarketOrderEvent, MarketTradeEvent
+from execution.mock.simulator import PaperExchangeSimulator
 from markets.base import Market, Token
-from paper.simulator import PaperExchangeSimulator
 from utils.logger import get_logger
 
 

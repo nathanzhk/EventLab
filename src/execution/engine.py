@@ -3,8 +3,8 @@ from __future__ import annotations
 import asyncio
 
 from enums import Side
-from execution.clients import TradeClient
 from execution.events import MarketOrderEvent, MarketTradeEvent
+from execution.live.clients import TradeClient
 from execution.manager import EventPublisher, ManagedOrder, OrderManager
 from markets.base import Market
 from prediction.events import DesiredPositionEvent

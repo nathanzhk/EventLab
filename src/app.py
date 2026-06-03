@@ -10,20 +10,20 @@ from event_bus import EventBus
 from execution import (
     MarketOrderEvent,
     MarketTradeEvent,
-    MarketTradeStream,
 )
-from execution.clients import MakerTradeClient, TakerTradeClient
 from execution.component import execution_component
 from execution.engine import ExecutionEngine
-from markets.base import Market
-from observation.component import runtime_state_component
-from paper import (
+from execution.live import MarketTradeStream
+from execution.live.clients import MakerTradeClient, TakerTradeClient
+from execution.mock import (
     PaperExchangeSimulator,
     PaperMakerTradeClient,
     PaperTakerTradeClient,
     PaperTradeStream,
     paper_match_component,
 )
+from markets.base import Market
+from observation.component import runtime_state_component
 from prediction.component import strategy_component
 from prediction.engine import StrategyEngine
 from prediction.strategy import Strategy

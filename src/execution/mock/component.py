@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from datasource import MarketQuoteEvent
 from event_bus import EventBus, OverflowPolicy, Subscription
-from paper.simulator import PaperExchangeSimulator
+from execution.mock.simulator import PaperExchangeSimulator
 
 if TYPE_CHECKING:
     from app import ComponentFactory
