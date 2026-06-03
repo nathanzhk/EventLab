@@ -39,7 +39,7 @@ from prediction.engine import StrategyEngine
 from prediction.strategy import Strategy
 from runtime.component import runtime_state_component
 
-ExecutionMode = Literal["live", "paper"]
+ExecutionMode = Literal["live", "mock"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,7 +75,7 @@ class Runtime:
         self._execution_mode = execution_mode
         bus = EventBus()
         paper_simulator: PaperExchangeSimulator | None = None
-        if execution_mode == "paper":
+        if execution_mode == "mock":
             paper_simulator = PaperExchangeSimulator()
             maker_client = PaperMakerTradeClient(paper_simulator)
             taker_client = PaperTakerTradeClient(paper_simulator)

@@ -8,7 +8,6 @@ from pathlib import Path
 from app import ExecutionMode, Runtime
 from models import BTC5mMarket
 from polymarket import get_crypto_price_result
-from prediction.strategies import DualBuyStrategy
 from prediction.strategy import DefaultStrategy
 from utils.env import Env
 from utils.logger import configure_logging, get_logger, set_log_file
@@ -16,45 +15,27 @@ from utils.time import sleep_until
 
 logger = get_logger("MAIN")
 
-_DEFAULT_PREWARM_S = 20
-_DEFAULT_SHUTDOWN_S = 240
+_MARKET_PREWARM_S = 30
+_SETTLE_TIMEOUT_S = 30
 
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--mode",
-        choices=("supervisor", "worker"),
-        default="supervisor",
-        help="supervisor starts one worker per market; worker runs one fixed market",
-    )
-    parser.add_argument(
         "--market-start-ts",
         type=int,
         default=None,
-        help="market start timestamp in seconds; worker mode only",
-    )
-    parser.add_argument(
-        "--prewarm-s",
-        type=int,
-        default=_DEFAULT_PREWARM_S,
-        help="seconds before the next market start to launch its worker",
-    )
-    parser.add_argument(
-        "--worker-grace-s",
-        type=int,
-        default=_DEFAULT_SHUTDOWN_S,
-        help="seconds after market end before a worker exits",
+        help=argparse.SUPPRESS,
     )
     parser.add_argument(
         "--execution-mode",
-        choices=("live", "paper"),
+        choices=("live", "mock"),
         default="live",
-        help="live uses real Polymarket clients; paper uses the local simulator",
+        help="live uses real Polymarket clients; mock uses the local simulator",
     )
     parser.add_argument(
         "--strategy",
-        choices=("none", "dual-buy"),
+        choices=("none",),
         default="none",
         help="strategy to run; none only observes market data",
     )
@@ -70,43 +51,35 @@ async def run(args: argparse.Namespace) -> None:
     state_logger = get_logger("STATE")
     state_logger.setLevel(logging.INFO)
 
-    if args.mode == "worker":
+    if args.market_start_ts is not None:
         await run_worker(
             args.market_start_ts,
-            worker_grace_s=args.worker_grace_s,
             execution_mode=args.execution_mode,
             strategy_name=args.strategy,
         )
     else:
         await run_supervisor(
-            prewarm_s=args.prewarm_s,
-            worker_grace_s=args.worker_grace_s,
             execution_mode=args.execution_mode,
             strategy_name=args.strategy,
         )
 
 
 async def run_worker(
-    market_start_ts: int | None,
+    market_start_ts: int,
     *,
-    worker_grace_s: int,
     execution_mode: ExecutionMode,
     strategy_name: str,
 ) -> None:
-    market = (
-        BTC5mMarket.curr_market()
-        if market_start_ts is None
-        else BTC5mMarket.from_start_ts(market_start_ts)
-    )
+    market = BTC5mMarket.from_start_ts(market_start_ts)
     set_log_file(market.slug)
     logger.info("start worker for %s", market.slug)
     logger.info("%s", market.title)
-    logger.info("strategy=%s execution_mode=%s", strategy_name, execution_mode)
+    logger.info("execution_mode=%s strategy=%s", execution_mode, strategy_name)
 
     runtime = Runtime(
         market=market,
         symbol="BTCUSDT",
-        strategy=_build_strategy(strategy_name),
+        strategy=DefaultStrategy(),
         execution_mode=execution_mode,
     )
     runtime_task = asyncio.create_task(
@@ -114,42 +87,32 @@ async def run_worker(
         name=f"runtime-{market.slug}",
     )
     settlement_task = asyncio.create_task(
-        _settle_market_after_end(runtime, market, timeout_s=worker_grace_s),
+        _settle_market(runtime, market),
         name=f"settle-{market.slug}",
     )
 
-    done, pending = await asyncio.wait(
+    await asyncio.wait(
         {runtime_task, settlement_task},
         return_when=asyncio.FIRST_COMPLETED,
     )
-    for task in pending:
-        task.cancel()
-
-    if runtime_task in done:
-        await asyncio.gather(*pending, return_exceptions=True)
+    if runtime_task.done():
+        settlement_task.cancel()
+        await asyncio.gather(settlement_task, return_exceptions=True)
         await runtime_task
-        return
+    else:
+        logger.info("stop worker for %s", market.slug)
+        runtime_task.cancel()
+        await asyncio.gather(runtime_task, return_exceptions=True)
 
-    logger.info("market ended; stop worker for %s", market.slug)
-    runtime_task.cancel()
-    await asyncio.gather(runtime_task, return_exceptions=True)
 
-
-async def _settle_market_after_end(
-    runtime: Runtime,
-    market: BTC5mMarket,
-    *,
-    timeout_s: int,
-) -> None:
+async def _settle_market(runtime: Runtime, market: BTC5mMarket) -> None:
     await sleep_until(market.end_ts_s)
-    deadline = max(timeout_s, 0)
-    attempts = max(deadline, 1)
-    for attempt in range(attempts):
+    for attempt in range(_SETTLE_TIMEOUT_S):
         result = await asyncio.to_thread(
             get_crypto_price_result,
             symbol="BTC",
-            event_start_ts_s=market.start_ts_s,
             variant="fiveminute",
+            event_start_ts_s=market.start_ts_s,
         )
         if result is not None:
             logger.info(
@@ -161,55 +124,47 @@ async def _settle_market_after_end(
             )
             await runtime.settle_market(result["outcome"])
             return
-        if attempt + 1 < attempts:
+        if attempt + 1 < _SETTLE_TIMEOUT_S:
             await asyncio.sleep(1)
     logger.warning("market settlement unavailable before worker shutdown: %s", market.slug)
 
 
 async def run_supervisor(
     *,
-    prewarm_s: int,
-    worker_grace_s: int,
     execution_mode: ExecutionMode,
     strategy_name: str,
 ) -> None:
     set_log_file("supervisor")
     logger.info("start supervisor")
-    logger.info("strategy=%s execution_mode=%s", strategy_name, execution_mode)
+    logger.info("execution_mode=%s, strategy=%s", execution_mode, strategy_name)
+
     running: dict[int, asyncio.subprocess.Process] = {}
     try:
+        await _create_worker(
+            running,
+            BTC5mMarket.curr_market(),
+            execution_mode=execution_mode,
+            strategy_name=strategy_name,
+        )
         while True:
-            await _cleanup_workers(running)
-
-            curr_market = BTC5mMarket.curr_market()
-            await _ensure_worker(
-                running,
-                curr_market,
-                worker_grace_s=worker_grace_s,
-                execution_mode=execution_mode,
-                strategy_name=strategy_name,
-            )
-
             next_market = BTC5mMarket.next_market()
-            await sleep_until(next_market.start_ts_s - prewarm_s)
-            await _ensure_worker(
+            await sleep_until(next_market.start_ts_s - _MARKET_PREWARM_S)
+            await _create_worker(
                 running,
                 next_market,
-                worker_grace_s=worker_grace_s,
                 execution_mode=execution_mode,
                 strategy_name=strategy_name,
             )
-
             await sleep_until(next_market.start_ts_s)
+            await _cleanup_workers(running)
     finally:
         await _terminate_workers(running)
 
 
-async def _ensure_worker(
+async def _create_worker(
     running: dict[int, asyncio.subprocess.Process],
     market: BTC5mMarket,
     *,
-    worker_grace_s: int,
     execution_mode: ExecutionMode,
     strategy_name: str,
 ) -> None:
@@ -220,12 +175,8 @@ async def _ensure_worker(
     cmd = [
         sys.executable,
         str(Path(__file__).resolve()),
-        "--mode",
-        "worker",
         "--market-start-ts",
         str(market.start_ts_s),
-        "--worker-grace-s",
-        str(worker_grace_s),
         "--execution-mode",
         execution_mode,
         "--strategy",
@@ -257,12 +208,6 @@ async def _terminate_workers(running: dict[int, asyncio.subprocess.Process]) -> 
         if proc.returncode is None:
             with contextlib.suppress(ProcessLookupError):
                 await proc.wait()
-
-
-def _build_strategy(strategy_name: str):
-    if strategy_name == "dual-buy":
-        return DualBuyStrategy()
-    return DefaultStrategy()
 
 
 def main() -> None:
