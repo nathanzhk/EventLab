@@ -8,8 +8,8 @@ from bus import (
     OverflowPolicy,
     Subscription,
 )
-from observation import RuntimeStateEvent
 from prediction.engine import StrategyEngine
+from runtime import RuntimeStateEvent
 
 if TYPE_CHECKING:
     from app import ComponentFactory

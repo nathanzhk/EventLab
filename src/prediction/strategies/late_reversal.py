@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from models import Market
-from observation import RuntimeStateEvent
 from prediction.events import DesiredPositionEvent
+from runtime import RuntimeStateEvent
 from utils.logger import get_logger
 from utils.time import now_ts_ms
 

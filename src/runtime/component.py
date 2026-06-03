@@ -11,7 +11,7 @@ from bus import (
 from datasource import CryptoQuoteEvent, MarketQuoteEvent
 from execution import CurrentPositionEvent
 from models import Market
-from observation.runtime_state import RuntimeState
+from runtime.runtime_state import RuntimeState
 
 if TYPE_CHECKING:
     from app import ComponentFactory

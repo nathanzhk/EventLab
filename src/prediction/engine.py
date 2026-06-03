@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from observation import RuntimeStateEvent
 from prediction.strategy import Strategy, StrategyOutput
+from runtime import RuntimeStateEvent
 
 
 class StrategyEngine:

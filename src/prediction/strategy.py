@@ -3,8 +3,8 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Protocol
 
-from observation import RuntimeStateEvent
 from prediction.events import DesiredPositionEvent
+from runtime import RuntimeStateEvent
 from utils.logger import get_logger
 
 logger = get_logger("DEFAULT STRATEGY")

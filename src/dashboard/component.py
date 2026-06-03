@@ -10,7 +10,7 @@ import uvicorn
 
 from bus import EventBus, OverflowPolicy, Subscription
 from dashboard.server import app, broadcast_loop, enqueue_event, enqueue_payload, serialize_event
-from observation import RuntimeStateEvent
+from runtime import RuntimeStateEvent
 from utils.logger import get_logger
 
 if TYPE_CHECKING:

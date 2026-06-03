@@ -6,8 +6,8 @@ from enum import IntEnum
 from datasource import MarketQuoteEvent
 from execution import CurrentPositionEvent
 from models import Market, Token
-from observation import RuntimeStateEvent
 from prediction.events import DesiredPositionEvent
+from runtime import RuntimeStateEvent
 from utils.logger import get_logger
 from utils.time import now_ts_ms
 

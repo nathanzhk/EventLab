@@ -27,10 +27,10 @@ from execution.mock import (
     paper_match_component,
 )
 from models import Market
-from observation.component import runtime_state_component
 from prediction.component import strategy_component
 from prediction.engine import StrategyEngine
 from prediction.strategy import Strategy
+from runtime.component import runtime_state_component
 
 ExecutionMode = Literal["live", "paper"]
 
