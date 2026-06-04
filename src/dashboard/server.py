@@ -15,7 +15,7 @@ from runtime.events import RuntimeStateEvent
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    task = asyncio.create_task(broadcast_loop(), name="dashboard-broadcast")
+    task = asyncio.create_task(_broadcast(), name="dashboard-broadcast")
     try:
         yield
     finally:
@@ -26,12 +26,12 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-_clients: set[WebSocket] = set()
-_broadcast_queue: asyncio.Queue[bytes] = asyncio.Queue(maxsize=500)
-_latest_by_worker: dict[str, bytes] = {}
+_ws_clients: set[WebSocket] = set()
+_latest_state: dict[str, bytes] = {}
+_broadcast_state: asyncio.Queue[bytes] = asyncio.Queue(maxsize=500)
 
-_DEFAULT_PORT = 8177
-_HOST = "0.0.0.0"
+DASHBOARD_PORT = 8888
+_DASHBOARD_HOST = "0.0.0.0"
 _STATIC_DIR = Path(__file__).parent / "static"
 
 
@@ -40,74 +40,60 @@ async def index() -> FileResponse:
     return FileResponse(_STATIC_DIR / "index.html")
 
 
+@app.post("/state")
+async def update_state(request: Request) -> dict[str, bool]:
+    payload = await request.body()
+    _save_latest_state(payload)
+    _save_broadcast_state(payload)
+    return {"ok": True}
+
+
 @app.websocket("/ws")
-async def websocket_endpoint(ws: WebSocket) -> None:
+async def websocket(ws: WebSocket) -> None:
     await ws.accept()
-    _clients.add(ws)
+    _ws_clients.add(ws)
     try:
-        for payload in _latest_by_worker.values():
+        for payload in _latest_state.values():
             await ws.send_bytes(payload)
         while True:
             await ws.receive_text()
     except (asyncio.CancelledError, WebSocketDisconnect):
         pass
     finally:
-        _clients.discard(ws)
+        _ws_clients.discard(ws)
 
 
-@app.post("/state")
-async def ingest_state(request: Request) -> dict[str, bool]:
-    enqueue_payload(await request.body())
-    return {"ok": True}
+def _save_latest_state(payload: bytes) -> None:
+    state = orjson.loads(payload)
+    slug = state.get("market").get("slug")
+    _latest_state[slug] = payload
 
 
-async def broadcast_loop() -> None:
+def _save_broadcast_state(payload: bytes) -> None:
+    try:
+        _broadcast_state.put_nowait(payload)
+    except asyncio.QueueFull:
+        try:
+            _broadcast_state.get_nowait()
+        except asyncio.QueueEmpty:
+            pass
+        _broadcast_state.put_nowait(payload)
+
+
+async def _broadcast() -> None:
     while True:
-        payload = await _broadcast_queue.get()
-        to_remove: list[WebSocket] = []
-        for ws in _clients:
+        payload = await _broadcast_state.get()
+        invalid_clients: list[WebSocket] = []
+        for ws in _ws_clients:
             try:
                 await ws.send_bytes(payload)
             except Exception:
-                to_remove.append(ws)
-        for ws in to_remove:
-            _clients.discard(ws)
+                invalid_clients.append(ws)
+        for ws in invalid_clients:
+            _ws_clients.discard(ws)
 
 
-def enqueue_event(event: RuntimeStateEvent) -> None:
-    enqueue_payload(serialize_event(event))
-
-
-def enqueue_payload(payload: bytes) -> None:
-    _remember_latest(payload)
-    try:
-        _broadcast_queue.put_nowait(payload)
-    except asyncio.QueueFull:
-        try:
-            _broadcast_queue.get_nowait()
-        except asyncio.QueueEmpty:
-            pass
-        _broadcast_queue.put_nowait(payload)
-
-
-def serialize_event(event: RuntimeStateEvent) -> bytes:
-    return orjson.dumps(_serialize_state(event))
-
-
-def _remember_latest(payload: bytes) -> None:
-    try:
-        state = orjson.loads(payload)
-    except orjson.JSONDecodeError:
-        return
-    worker_id = state.get("worker_id")
-    if not worker_id:
-        market = state.get("market") or {}
-        worker_id = market.get("slug")
-    if worker_id:
-        _latest_by_worker[worker_id] = payload
-
-
-def _serialize_state(event: RuntimeStateEvent) -> dict[str, Any]:
+def serialize_state(event: RuntimeStateEvent) -> dict[str, Any]:
     return {
         "worker_id": event.market.slug,
         "event_ts_ms": event.event_ts_ms,
@@ -117,7 +103,6 @@ def _serialize_state(event: RuntimeStateEvent) -> dict[str, Any]:
             "title": event.market.title,
             "start_ts_s": event.market.start_ts_s,
             "end_ts_s": event.market.end_ts_s,
-            "fee_rate": event.market.fee_rate,
         },
         "yes_quote": _serialize_quote(event.yes_token_quote),
         "no_quote": _serialize_quote(event.no_token_quote),
@@ -139,8 +124,6 @@ def _serialize_quote(q: Any) -> dict[str, Any]:
     return {
         "best_bid": q.best_bid,
         "best_ask": q.best_ask,
-        "mid": q.mid,
-        "spread": q.spread,
     }
 
 
@@ -161,7 +144,7 @@ def _serialize_position(p: Any) -> dict[str, Any] | None:
     }
 
 
-async def serve(*, host: str = _HOST, port: int = _DEFAULT_PORT) -> None:
+async def serve(*, host: str = _DASHBOARD_HOST, port: int = DASHBOARD_PORT) -> None:
     config = uvicorn.Config(
         app,
         host=host,
