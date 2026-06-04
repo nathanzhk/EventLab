@@ -106,12 +106,10 @@ def serialize_state(event: RuntimeStateEvent) -> dict[str, Any]:
         },
         "yes_quote": _serialize_quote(event.yes_token_quote),
         "no_quote": _serialize_quote(event.no_token_quote),
-        "crypto": {
+        "crypto_quote": {
+            "curr": event.crypto_quote.curr_price,
             "base": event.crypto_quote.base_price,
             "diff": event.crypto_quote.diff_price,
-            "price": event.crypto_quote.curr_price,
-            "best_bid": event.crypto_quote.best_bid,
-            "best_ask": event.crypto_quote.best_ask,
         },
         "prev_side": event.prev_side,
         "curr_side": event.curr_side,

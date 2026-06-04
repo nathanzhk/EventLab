@@ -164,11 +164,9 @@ def _event_signature(event: RuntimeStateEvent) -> tuple[Any, ...]:
             event.no_token_quote.best_ask,
         ),
         (
-            event.crypto_quote.best_bid,
-            event.crypto_quote.best_ask,
+            event.crypto_quote.curr_price,
             event.crypto_quote.base_price,
             event.crypto_quote.diff_price,
-            event.crypto_quote.curr_price,
         ),
         (
             event.yes_token_position.opening_shares,

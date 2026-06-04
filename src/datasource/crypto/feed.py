@@ -52,13 +52,11 @@ class CryptoQuoteStream:
             and self._base_price is None
             and quote.recv_ts_ms >= self._market.start_ts_ms
         ):
-            self._base_price = quote.mid
+            self._base_price = round(quote.mid, 2)
 
         return CryptoQuoteEvent(
             recv_ts_ms=quote.recv_ts_ms,
-            best_bid=quote.best_bid,
-            best_ask=quote.best_ask,
-            curr_price=quote.mid,
+            curr_price=round(quote.mid, 2),
             base_price=self._base_price,
         )
 
@@ -77,7 +75,7 @@ def _load_api_base_price(*, symbol: str, start_ts_ms: int) -> float | None:
         start_ts_ms,
         rest_base_price,
     )
-    return rest_base_price
+    return round(rest_base_price, 2)
 
 
 def _get_api_base_price(*, symbol: str, start_ts_ms: int) -> float | None:
