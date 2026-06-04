@@ -9,7 +9,7 @@ from datasource.market import MarketQuoteEvent
 from execution.events import CurrentPositionEvent
 from models import Market
 from utils.logger import get_logger
-from utils.time import elapsed_ms_since, fmt_duration_s, now_ts_s
+from utils.time import elapsed_ms_since
 
 from .events import RuntimeStateEvent
 
@@ -198,11 +198,8 @@ def _log_event(event: RuntimeStateEvent) -> None:
         elapsed_ms_since(event.no_token_quote.recv_mono_ns),
         elapsed_ms_since(event.crypto_quote.recv_mono_ns),
     )
-    elapsed_s, remaining_s = _market_elapsed_remaining_s(event)
     logger.info(
-        "[%s-%s] ▲ bid %.2f ask %.2f | ▼ bid %.2f ask %.2f | $%.2f %s",
-        fmt_duration_s(elapsed_s),
-        fmt_duration_s(remaining_s),
+        "▲ bid %.2f ask %.2f | ▼ bid %.2f ask %.2f | $%.2f %s",
         event.yes_token_quote.best_bid,
         event.yes_token_quote.best_ask,
         event.no_token_quote.best_bid,
@@ -210,14 +207,14 @@ def _log_event(event: RuntimeStateEvent) -> None:
         event.crypto_quote.curr_price,
         _fmt_optional_signed_usd(event.crypto_quote.diff_price),
     )
-    logger.info(
+    logger.debug(
         "UP | open %.6f | open settling %.6f | close %.6f | close settling %.6f",
         event.yes_token_position.opening_shares,
         event.yes_token_position.open_settling_shares,
         event.yes_token_position.closing_shares,
         event.yes_token_position.close_settling_shares,
     ) if event.yes_token_position is not None else ...
-    logger.info(
+    logger.debug(
         "UP | hold %.6f @ %.2f %s | PnL %s",
         event.yes_token_position.holding_shares,
         event.yes_token_position.holding_avg_price,
@@ -227,14 +224,14 @@ def _log_event(event: RuntimeStateEvent) -> None:
         ),
         _fmt_signed_usd(event.yes_token_position.realized_pnl),
     ) if event.yes_token_position is not None else ...
-    logger.info(
+    logger.debug(
         "DN | open %.6f | open settling %.6f | close %.6f | close settling %.6f",
         event.no_token_position.opening_shares,
         event.no_token_position.open_settling_shares,
         event.no_token_position.closing_shares,
         event.no_token_position.close_settling_shares,
     ) if event.no_token_position is not None else ...
-    logger.info(
+    logger.debug(
         "DN | hold %.6f @ %.2f %s | PnL %s",
         event.no_token_position.holding_shares,
         event.no_token_position.holding_avg_price,
@@ -244,11 +241,6 @@ def _log_event(event: RuntimeStateEvent) -> None:
         ),
         _fmt_signed_usd(event.no_token_position.realized_pnl),
     ) if event.no_token_position is not None else ...
-
-
-def _market_elapsed_remaining_s(event: RuntimeStateEvent) -> tuple[int, int]:
-    market_ts_s = min(max(now_ts_s(), event.market.start_ts_s), event.market.end_ts_s)
-    return market_ts_s - event.market.start_ts_s, event.market.end_ts_s - market_ts_s
 
 
 def _fmt_signed_usd(value: float) -> str:
