@@ -66,7 +66,7 @@ class TradeClient:
             return order_id
         except PolyApiException as e:
             self.logger.debug("%r", e.error_msg)
-            self.logger.error("submit order failed: %s", _error_message(e))
+            self.logger.warning("submit order failed: %s", _error_message(e))
             return None
 
     def sell(self, token: Token, shares: float, price: float) -> str | None:
@@ -79,7 +79,7 @@ class TradeClient:
             return order_id
         except PolyApiException as e:
             self.logger.debug("%r", e.error_msg)
-            self.logger.error("submit order failed: %s", _error_message(e))
+            self.logger.warning("submit order failed: %s", _error_message(e))
             return None
 
     def warm_up(self, market: Market):
@@ -133,7 +133,7 @@ class TradeClient:
             self.logger.debug("%r", resp)
         except PolyApiException as e:
             self.logger.debug("%r", e.error_msg)
-            self.logger.error("get order failed: %s", _error_message(e))
+            self.logger.warning("get order failed: %s", _error_message(e))
             return None
 
         if resp is None:
@@ -141,7 +141,7 @@ class TradeClient:
             return None
 
         if not isinstance(resp, dict):
-            self.logger.error("invalid response: %r", resp)
+            self.logger.warning("invalid response: %r", resp)
             return None
 
         return build_order_event(resp, source="pull")
@@ -153,17 +153,17 @@ class TradeClient:
             self.logger.debug("%r", resp)
         except PolyApiException as e:
             self.logger.debug("%r", e.error_msg)
-            self.logger.error("get orders failed: %s", _error_message(e))
+            self.logger.warning("get orders failed: %s", _error_message(e))
             return []
 
         if not isinstance(resp, list):
-            self.logger.error("invalid response: %r", resp)
+            self.logger.warning("invalid response: %r", resp)
             return []
 
         orders: list[MarketOrderEvent] = []
         for item in resp:
             if not isinstance(item, dict):
-                self.logger.error("invalid response: %r", item)
+                self.logger.warning("invalid response: %r", item)
                 continue
             order = build_order_event(item, source="pull")
             orders.append(order) if order is not None else ...
@@ -176,11 +176,11 @@ class TradeClient:
             self.logger.debug("%r", resp)
         except PolyApiException as e:
             self.logger.debug("%r", e.error_msg)
-            self.logger.error("get trade failed: %s", _error_message(e))
+            self.logger.warning("get trade failed: %s", _error_message(e))
             return None
 
         if not isinstance(resp, list) or len(resp) > 1:
-            self.logger.error("invalid response: %r", resp)
+            self.logger.warning("invalid response: %r", resp)
             return None
 
         if len(resp) == 0:
@@ -189,7 +189,7 @@ class TradeClient:
 
         resp = resp[0]
         if not isinstance(resp, dict):
-            self.logger.error("invalid response: %r", resp)
+            self.logger.warning("invalid response: %r", resp)
             return None
 
         return build_trade_event(resp, Env.POLYMARKET_PROXY_WALLET, source="pull")
@@ -201,17 +201,17 @@ class TradeClient:
             self.logger.debug("%r", resp)
         except PolyApiException as e:
             self.logger.debug("%r", e.error_msg)
-            self.logger.error("get trades failed: %s", _error_message(e))
+            self.logger.warning("get trades failed: %s", _error_message(e))
             return []
 
         if not isinstance(resp, list):
-            self.logger.error("invalid response: %r", resp)
+            self.logger.warning("invalid response: %r", resp)
             return []
 
         trades: list[MarketTradeEvent] = []
         for item in resp:
             if not isinstance(item, dict):
-                self.logger.error("invalid response: %r", item)
+                self.logger.warning("invalid response: %r", item)
                 continue
             trade = build_trade_event(item, Env.POLYMARKET_PROXY_WALLET, source="pull")
             trades.append(trade) if trade is not None else ...
@@ -229,11 +229,12 @@ class TradeClient:
         except PolyApiException as e:
             self.logger.debug("%r", e.error_msg)
             error_message = _error_message(e)
-            self.logger.error("cancel order failed: %s", error_message)
+            self.logger.warning("cancel order failed: %s", error_message)
             return False, error_message
 
         success_list = resp.get("canceled", []) if isinstance(resp, dict) else []
         if order_id in success_list:
+            self.logger.info("cancel order success %s", order_id)
             return True, ""
 
         failed_dict = resp.get("not_canceled", {}) if isinstance(resp, dict) else {}
@@ -242,7 +243,7 @@ class TradeClient:
             if isinstance(failed_dict, dict)
             else "unknown reason"
         )
-        self.logger.error("cancel order failed: %s", failed_reason)
+        self.logger.warning("cancel order failed: %s", failed_reason)
         return False, failed_reason
 
     def _get_balance(self, params: BalanceAllowanceParams) -> float:
@@ -288,16 +289,16 @@ class TradeClient:
             self.logger.info("submit order latency %.3f ms", submit_latency_ms)
 
         if not isinstance(resp, dict):
-            self.logger.error("invalid response: %r", resp)
+            self.logger.warning("invalid response: %r", resp)
             return None
 
         if resp.get("success") is not True:
-            self.logger.error("%s", resp.get("errorMsg") or "unknown error")
+            self.logger.warning("%s", resp.get("errorMsg") or "unknown error")
             return None
 
         order_id = resp.get("orderID")
         if not isinstance(order_id, str) or not order_id:
-            self.logger.error("missing order id: %r", resp)
+            self.logger.warning("missing order id: %r", resp)
             return None
         return order_id
 
