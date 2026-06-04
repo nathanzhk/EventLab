@@ -345,14 +345,20 @@
 <script>
 const $ = id => document.getElementById(id);
 const FIVE_MINUTES_MS = 5 * 60 * 1000;
+const CHART_SAMPLE_INTERVAL_MS = 33;
+const PRICE_BLEND_DURATION_MS = 280;
+const CHART_FIELDS = ['yes', 'no', 'btc', 'btcBase', 'btcDiff'];
 
 let ws;
 let reconnectDelay = 1000;
 let activeMarketId = null;
 let userSelectedMarket = false;
 let detailsRenderQueued = false;
+let chartAnimationFrame = null;
+let lastChartRenderMs = 0;
 const marketStates = new Map();
 const marketHistory = new Map();
+const marketChartAnimations = new Map();
 const cssVars = new Map();
 
 function connect() {
@@ -493,6 +499,7 @@ function selectMarket(marketId) {
   activeMarketId = marketId;
   userSelectedMarket = true;
   renderMarkets();
+  sampleActiveChart(Date.now(), true);
   renderActiveDetail();
 }
 
@@ -565,23 +572,139 @@ function appendHistory(marketId, state) {
   const tsMs = Number(state.ts_ms);
   if (!Number.isFinite(tsMs)) return;
 
-  const samples = marketHistory.get(marketId) || [];
-  samples.push({
+  ingestChartSample(marketId, {
     tsMs,
     yes: getMidPrice(state?.yes_token_quote),
     no: getMidPrice(state?.no_token_quote),
     btc: toFiniteNumber(state?.crypto_quote?.curr),
     btcBase: toFiniteNumber(state?.crypto_quote?.base),
     btcDiff: getBtcDiff(state?.crypto_quote),
-  });
+  }, getTimeWindow(state));
+}
+
+function ingestChartSample(marketId, sample, windowRange) {
+  const nowMs = Date.now();
+  const animation = getChartAnimation(marketId);
+  animation.windowRange = windowRange;
+
+  if (!animation.hasDisplay) {
+    for (const field of CHART_FIELDS) {
+      animation.display[field] = sample[field];
+      animation.target[field] = sample[field];
+      animation.transition[field] = null;
+    }
+    animation.hasDisplay = true;
+    appendDisplayedSample(marketId, sample.tsMs, animation.display, windowRange, true);
+    return;
+  }
+
+  syncAnimatedValues(animation, nowMs);
+  for (const field of CHART_FIELDS) {
+    const nextValue = sample[field];
+    if (nextValue == null) continue;
+
+    const currentValue = animation.display[field];
+    if (currentValue == null) {
+      animation.display[field] = nextValue;
+      animation.target[field] = nextValue;
+      animation.transition[field] = null;
+      continue;
+    }
+
+    if (Math.abs(currentValue - nextValue) < 0.000001) {
+      animation.target[field] = nextValue;
+      animation.transition[field] = null;
+      continue;
+    }
+
+    animation.target[field] = nextValue;
+    animation.transition[field] = {
+      startMs: nowMs,
+      endMs: nowMs + PRICE_BLEND_DURATION_MS,
+      from: currentValue,
+      to: nextValue,
+    };
+  }
+}
+
+function getChartAnimation(marketId) {
+  let animation = marketChartAnimations.get(marketId);
+  if (!animation) {
+    animation = {
+      hasDisplay: false,
+      lastSampleTsMs: null,
+      windowRange: null,
+      display: {},
+      target: {},
+      transition: {},
+    };
+    marketChartAnimations.set(marketId, animation);
+  }
+  return animation;
+}
+
+function sampleActiveChart(nowMs, force) {
+  const state = marketStates.get(activeMarketId);
+  if (!state) return;
+
+  const animation = marketChartAnimations.get(activeMarketId);
+  if (!animation?.hasDisplay) return;
 
   const windowRange = getTimeWindow(state);
+  animation.windowRange = windowRange;
+  syncAnimatedValues(animation, nowMs);
+
+  const sampleTsMs = Math.min(Math.max(nowMs, windowRange.startMs), windowRange.endMs);
+  const elapsedSinceSample = animation.lastSampleTsMs == null
+    ? Infinity
+    : sampleTsMs - animation.lastSampleTsMs;
+
+  if (!force && elapsedSinceSample < CHART_SAMPLE_INTERVAL_MS) return;
+  appendDisplayedSample(activeMarketId, sampleTsMs, animation.display, windowRange, false);
+}
+
+function syncAnimatedValues(animation, nowMs) {
+  for (const field of CHART_FIELDS) {
+    const transition = animation.transition[field];
+    if (!transition) {
+      animation.display[field] = animation.target[field];
+      continue;
+    }
+
+    if (nowMs >= transition.endMs) {
+      animation.display[field] = transition.to;
+      animation.transition[field] = null;
+      continue;
+    }
+
+    const progress = (nowMs - transition.startMs) / Math.max(transition.endMs - transition.startMs, 1);
+    const eased = smoothStep(Math.min(Math.max(progress, 0), 1));
+    animation.display[field] = transition.from + (transition.to - transition.from) * eased;
+  }
+}
+
+function appendDisplayedSample(marketId, tsMs, values, windowRange, force) {
+  const animation = getChartAnimation(marketId);
+  if (!force && animation.lastSampleTsMs != null && tsMs <= animation.lastSampleTsMs) return;
+
+  const samples = marketHistory.get(marketId) || [];
+  const sample = { tsMs };
+  for (const field of CHART_FIELDS) {
+    sample[field] = values[field] ?? null;
+  }
+  samples.push(sample);
+  animation.lastSampleTsMs = tsMs;
+
   const maxTsMs = Math.max(windowRange.endMs, tsMs);
-  const pruned = samples.filter(sample => {
-    return sample.tsMs >= windowRange.startMs && sample.tsMs <= maxTsMs;
+  const pruned = samples.filter(existingSample => {
+    return existingSample.tsMs >= windowRange.startMs && existingSample.tsMs <= maxTsMs;
   });
 
   marketHistory.set(marketId, pruned);
+}
+
+function smoothStep(value) {
+  return value * value * (3 - 2 * value);
 }
 
 function getMidPrice(quote) {
@@ -617,7 +740,7 @@ function getTimeWindow(state) {
     return { startMs, endMs: startMs + FIVE_MINUTES_MS };
   }
 
-  const nowMs = Number(state?.ts_ms) || Date.now();
+  const nowMs = Date.now();
   return { startMs: nowMs - FIVE_MINUTES_MS, endMs: nowMs };
 }
 
@@ -629,6 +752,7 @@ function renderDetails() {
     return;
   }
 
+  sampleActiveChart(Date.now(), false);
   const history = marketHistory.get(activeMarketId) || [];
   const windowRange = getTimeWindow(state);
   drawTokenChart($('token-chart'), history, windowRange);
@@ -816,10 +940,7 @@ function drawSeries(ctx, plot, series, config) {
   ctx.lineCap = 'round';
 
   ctx.beginPath();
-  points.forEach((point, index) => {
-    if (index === 0) ctx.moveTo(point.x, point.y);
-    else ctx.lineTo(point.x, point.y);
-  });
+  drawSmoothPath(ctx, points);
   ctx.stroke();
 
   const last = points[points.length - 1];
@@ -827,6 +948,26 @@ function drawSeries(ctx, plot, series, config) {
   ctx.arc(last.x, last.y, 3, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
+}
+
+function drawSmoothPath(ctx, points) {
+  ctx.moveTo(points[0].x, points[0].y);
+  if (points.length === 1) return;
+  if (points.length === 2) {
+    ctx.lineTo(points[1].x, points[1].y);
+    return;
+  }
+
+  for (let index = 1; index < points.length - 1; index += 1) {
+    const current = points[index];
+    const next = points[index + 1];
+    const midX = (current.x + next.x) / 2;
+    const midY = (current.y + next.y) / 2;
+    ctx.quadraticCurveTo(current.x, current.y, midX, midY);
+  }
+
+  const last = points[points.length - 1];
+  ctx.lineTo(last.x, last.y);
 }
 
 function drawEmptyChart(canvas, text) {
@@ -895,7 +1036,24 @@ window.addEventListener('resize', () => {
   cssVars.clear();
   renderDetails();
 });
+
+function startChartAnimation() {
+  if (chartAnimationFrame != null) return;
+  const scheduleFrame = window.requestAnimationFrame || (callback => setTimeout(() => callback(Date.now()), 16));
+
+  const animate = nowMs => {
+    if (nowMs - lastChartRenderMs >= CHART_SAMPLE_INTERVAL_MS) {
+      lastChartRenderMs = nowMs;
+      renderDetails();
+    }
+    chartAnimationFrame = scheduleFrame(animate);
+  };
+
+  chartAnimationFrame = scheduleFrame(animate);
+}
+
 renderActiveDetail();
+startChartAnimation();
 connect();
 </script>
 </body>
