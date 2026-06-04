@@ -1,18 +1,15 @@
 from __future__ import annotations
 
 import asyncio
-import errno
-import socket
 from typing import TYPE_CHECKING
 
 import requests
-import uvicorn
 
 from bus import EventBus, OverflowPolicy, Subscription
 from runtime.events import RuntimeStateEvent
 from utils.logger import get_logger
 
-from .server import app, broadcast_loop, enqueue_event, enqueue_payload, serialize_event
+from .server import serialize_event
 
 if TYPE_CHECKING:
     from app import ComponentFactory
@@ -20,7 +17,6 @@ if TYPE_CHECKING:
 logger = get_logger("DASHBOARD")
 
 _DEFAULT_PORT = 8177
-_HOST = "0.0.0.0"
 
 
 class DashboardComponent:
@@ -38,56 +34,19 @@ class DashboardComponent:
         tasks.create_task(self._run(state_events))
 
     async def _run(self, events: Subscription[RuntimeStateEvent]) -> None:
-        sock = self._bind_socket()
-        if sock is not None:
-            await self._run_server(events, sock)
-            return
-
-        logger.info("port %d in use; forwarding dashboard state to existing dashboard", self._port)
+        logger.info("forwarding dashboard state to persistent dashboard on port %d", self._port)
+        is_available: bool | None = None
         async for event in events:
             payload = serialize_event(event)
-            if await self._forward_payload(payload):
-                continue
-
-            sock = self._bind_socket()
-            if sock is None:
-                logger.warning("dashboard forward failed; retrying on next state event")
-                continue
-
-            logger.info("dashboard port %d is free; this worker is serving dashboard", self._port)
-            enqueue_payload(payload)
-            await self._run_server(events, sock)
-            return
-
-    async def _run_server(
-        self,
-        events: Subscription[RuntimeStateEvent],
-        sock: socket.socket,
-    ) -> None:
-        async with asyncio.TaskGroup() as tasks:
-            tasks.create_task(self._event_loop(events))
-            tasks.create_task(broadcast_loop())
-            tasks.create_task(self._serve(sock))
-
-    async def _event_loop(self, events: Subscription[RuntimeStateEvent]) -> None:
-        async for event in events:
-            enqueue_event(event)
-
-    async def _serve(self, sock: socket.socket) -> None:
-        config = uvicorn.Config(
-            app,
-            host=_HOST,
-            port=self._port,
-            log_config=None,
-            log_level="warning",
-            lifespan="off",
-        )
-        try:
-            server = uvicorn.Server(config)
-            await server.serve(sockets=[sock])
-        finally:
-            if sock.fileno() != -1:
-                sock.close()
+            forwarded = await self._forward_payload(payload)
+            if forwarded and is_available is not True:
+                logger.info("dashboard backend available on port %d", self._port)
+            if not forwarded and is_available is not False:
+                logger.warning(
+                    "dashboard backend unavailable on port %d; dropping dashboard state",
+                    self._port,
+                )
+            is_available = forwarded
 
     async def _forward_payload(self, payload: bytes) -> bool:
         try:
@@ -104,20 +63,6 @@ class DashboardComponent:
             timeout=1,
         )
         response.raise_for_status()
-
-    def _bind_socket(self) -> socket.socket | None:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        try:
-            sock.bind((_HOST, self._port))
-            sock.listen()
-            sock.setblocking(False)
-            return sock
-        except OSError as exc:
-            sock.close()
-            if exc.errno == errno.EADDRINUSE:
-                return None
-            raise
 
 
 def dashboard_component() -> ComponentFactory:

@@ -1,21 +1,37 @@
 from __future__ import annotations
 
 import asyncio
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 from typing import Any
 
 import orjson
+import uvicorn
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 
 from runtime.events import RuntimeStateEvent
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    task = asyncio.create_task(broadcast_loop(), name="dashboard-broadcast")
+    try:
+        yield
+    finally:
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
+
+
+app = FastAPI(lifespan=lifespan)
 
 _clients: set[WebSocket] = set()
 _broadcast_queue: asyncio.Queue[bytes] = asyncio.Queue(maxsize=500)
 _latest_by_worker: dict[str, bytes] = {}
 
+_DEFAULT_PORT = 8177
+_HOST = "0.0.0.0"
 _STATIC_DIR = Path(__file__).parent / "static"
 
 
@@ -143,3 +159,15 @@ def _serialize_position(p: Any) -> dict[str, Any] | None:
         "effective_shares": p.effective_shares,
         "sellable_shares": p.sellable_shares,
     }
+
+
+async def serve(*, host: str = _HOST, port: int = _DEFAULT_PORT) -> None:
+    config = uvicorn.Config(
+        app,
+        host=host,
+        port=port,
+        log_config=None,
+        log_level="warning",
+    )
+    server = uvicorn.Server(config)
+    await server.serve()

@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 from app import ExecutionMode, Runtime
+from dashboard.server import serve as serve_dashboard
 from models import BTC5mMarket
 from polymarket import get_crypto_price_result
 from prediction.strategy import DefaultStrategy
@@ -58,10 +59,18 @@ async def run(args: argparse.Namespace) -> None:
             strategy_name=args.strategy,
         )
     else:
-        await run_supervisor(
-            execution_mode=args.execution_mode,
-            strategy_name=args.strategy,
-        )
+        async with asyncio.TaskGroup() as tasks:
+            tasks.create_task(
+                serve_dashboard(),
+                name="dashboard-server",
+            )
+            tasks.create_task(
+                run_supervisor(
+                    execution_mode=args.execution_mode,
+                    strategy_name=args.strategy,
+                ),
+                name="supervisor",
+            )
 
 
 async def run_worker(
