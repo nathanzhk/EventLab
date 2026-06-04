@@ -190,7 +190,10 @@ def _configure_logger(logger: logging.Logger) -> None:
         logger.removeHandler(_NULL_HANDLER)
     if _QUEUE_HANDLER not in logger.handlers:
         logger.addHandler(_QUEUE_HANDLER)
-    if _CONSOLE_HANDLER not in logger.handlers:
+    if logger.name in _QUOTE_LOGGER_NAMES:
+        if _CONSOLE_HANDLER in logger.handlers:
+            logger.removeHandler(_CONSOLE_HANDLER)
+    elif _CONSOLE_HANDLER not in logger.handlers:
         logger.addHandler(_CONSOLE_HANDLER)
     logger.setLevel(logging.DEBUG)
     logger.propagate = False
