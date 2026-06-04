@@ -6,152 +6,354 @@
 <title>EventLab Dashboard</title>
 <style>
   :root {
-    --bg: #0d1117; --surface: #161b22; --border: #30363d;
-    --text: #e6edf3; --muted: #8b949e; --green: #3fb950;
-    --red: #f85149; --blue: #58a6ff; --yellow: #d29922;
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --blue: #58a6ff;
+    --green: #3fb950;
+    --red: #f85149;
+    --yellow: #d29922;
   }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace; background: var(--bg); color: var(--text); font-size: 13px; padding: 16px; }
-  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
-  .header h1 { font-size: 16px; font-weight: 600; }
-  .status { display: flex; align-items: center; gap: 8px; }
-  .tabs { display: flex; gap: 8px; margin: -4px 0 16px; overflow-x: auto; padding-bottom: 2px; }
-  .tab { appearance: none; border: 1px solid var(--border); background: var(--surface); color: var(--muted); border-radius: 6px; padding: 7px 10px; font: inherit; cursor: pointer; white-space: nowrap; }
-  .tab.active { border-color: var(--blue); color: var(--text); background: rgba(88,166,255,0.12); }
-  .tab .tab-title { display: block; font-size: 12px; }
-  .tab .tab-meta { display: block; margin-top: 2px; font-size: 10px; color: var(--muted); }
-  .dot { width: 8px; height: 8px; border-radius: 50%; }
-  .dot.on { background: var(--green); box-shadow: 0 0 6px var(--green); }
-  .dot.off { background: var(--red); }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
-  .card-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 10px; }
-  .row { display: flex; justify-content: space-between; padding: 3px 0; }
-  .label { color: var(--muted); }
-  .val { font-weight: 500; text-align: right; }
-  .up { color: var(--green); }
-  .dn { color: var(--red); }
-  .neutral { color: var(--muted); }
-  .side-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
-  .side-badge.UP { background: rgba(63,185,80,0.15); color: var(--green); }
-  .side-badge.DOWN { background: rgba(248,81,73,0.15); color: var(--red); }
-  .side-badge.NONE { background: rgba(139,148,158,0.15); color: var(--muted); }
-  .timer { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .timer-row { display: flex; gap: 24px; align-items: baseline; }
-  .timer-label { font-size: 11px; color: var(--muted); }
-  .full-width { grid-column: 1 / -1; }
-  .pnl-row { display: flex; gap: 24px; }
-  .pnl-block { flex: 1; }
-  .pnl-block h3 { font-size: 11px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .latency { color: var(--muted); font-size: 11px; }
-  #events-log { max-height: 120px; overflow-y: auto; font-size: 11px; color: var(--muted); line-height: 1.6; }
-  #events-log div { border-bottom: 1px solid var(--border); padding: 2px 0; }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 16px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 13px;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .layout {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .panel {
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+
+  .panel-title {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .markets {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    gap: 6px;
+    overflow-x: auto;
+  }
+
+  .market {
+    min-width: 104px;
+    min-height: 34px;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    text-align: center;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .market:hover,
+  .market.active {
+    border-color: var(--blue);
+    background: rgba(88, 166, 255, 0.12);
+  }
+
+  .market-detail {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .market-detail[hidden] {
+    display: none;
+  }
+
+  .market-detail-main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .market-detail-title {
+    overflow: hidden;
+    color: var(--text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .market-quotes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .quote-label {
+    color: var(--muted);
+  }
+
+  .quote-price {
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .market-link {
+    flex: 0 0 auto;
+    color: var(--blue);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .market-link:hover {
+    text-decoration: underline;
+  }
+
+  .dashboard-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .chart-row {
+    min-width: 0;
+  }
+
+  .chart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--muted);
+  }
+
+  .legend-swatch {
+    width: 10px;
+    height: 2px;
+    border-radius: 999px;
+    background: currentColor;
+  }
+
+  .legend-item.yes { color: var(--green); }
+  .legend-item.no { color: var(--red); }
+  .legend-item.btc { color: var(--yellow); }
+
+  .chart-frame {
+    position: relative;
+    width: 100%;
+    height: 220px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .trade-position-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .subpanel {
+    min-height: 118px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+  }
+
+  .subpanel-title {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .placeholder {
+    padding: 14px 10px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .empty {
+    padding: 12px;
+    color: var(--muted);
+  }
+
+  @media (max-width: 720px) {
+    body { padding: 12px; }
+    .header { align-items: flex-start; flex-direction: column; }
+    .market-detail {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+    .market-detail-title {
+      white-space: normal;
+    }
+    .chart-frame { height: 180px; }
+    .chart-header { align-items: flex-start; flex-direction: column; }
+    .legend { justify-content: flex-start; }
+    .trade-position-row { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
-<div class="header">
-  <h1>EventLab Dashboard</h1>
-  <div class="status">
-    <span class="latency" id="latency">--</span>
-    <div class="dot off" id="ws-dot"></div>
-    <span id="ws-status" style="color:var(--muted); font-size:12px;">Disconnected</span>
-  </div>
-</div>
-
-<div class="tabs" id="worker-tabs"></div>
-
-<div class="grid">
-  <!-- Market Timer -->
-  <div class="card full-width">
-    <div class="card-title" id="market-title">--</div>
-    <div class="timer-row">
-      <div>
-        <div class="timer" id="elapsed">--:--</div>
-        <div class="timer-label">Elapsed</div>
-      </div>
-      <div>
-        <div class="timer" id="remaining">--:--</div>
-        <div class="timer-label">Remaining</div>
-      </div>
-      <div style="margin-left:auto; text-align:right;">
-        <div>
-          <span class="label">Signal: </span>
-          <span class="side-badge NONE" id="signal">--</span>
-        </div>
-        <div style="margin-top:4px;">
-          <span class="label">Prev: </span>
-          <span class="side-badge NONE" id="prev-signal">--</span>
-        </div>
-      </div>
+  <header class="header">
+    <h1>EventLab Dashboard</h1>
+    <div class="status">
+      <span id="latency">--</span>
     </div>
-  </div>
+  </header>
 
-  <!-- YES Token -->
-  <div class="card">
-    <div class="card-title">YES (UP)</div>
-    <div class="row"><span class="label">Bid</span><span class="val up" id="yes-bid">--</span></div>
-    <div class="row"><span class="label">Ask</span><span class="val up" id="yes-ask">--</span></div>
-    <div class="row"><span class="label">Mid</span><span class="val" id="yes-mid">--</span></div>
-    <div class="row"><span class="label">Spread</span><span class="val" id="yes-spread">--</span></div>
-  </div>
-
-  <!-- NO Token -->
-  <div class="card">
-    <div class="card-title">NO (DOWN)</div>
-    <div class="row"><span class="label">Bid</span><span class="val dn" id="no-bid">--</span></div>
-    <div class="row"><span class="label">Ask</span><span class="val dn" id="no-ask">--</span></div>
-    <div class="row"><span class="label">Mid</span><span class="val" id="no-mid">--</span></div>
-    <div class="row"><span class="label">Spread</span><span class="val" id="no-spread">--</span></div>
-  </div>
-
-  <!-- BTC -->
-  <div class="card">
-    <div class="card-title">BTC</div>
-    <div class="row"><span class="label">Bid</span><span class="val" id="btc-bid">--</span></div>
-    <div class="row"><span class="label">Ask</span><span class="val" id="btc-ask">--</span></div>
-    <div class="row"><span class="label">Mid</span><span class="val" id="btc-mid">--</span></div>
-    <div class="row"><span class="label">Baseline</span><span class="val" id="btc-baseline">--</span></div>
-    <div class="row"><span class="label">Change</span><span class="val" id="btc-change">--</span></div>
-  </div>
-
-  <!-- Positions -->
-  <div class="card full-width">
-    <div class="card-title">Positions</div>
-    <div class="pnl-row">
-      <div class="pnl-block">
-        <h3>YES (UP)</h3>
-        <div class="row"><span class="label">Holding</span><span class="val" id="yes-hold">--</span></div>
-        <div class="row"><span class="label">Avg Price</span><span class="val" id="yes-avg">--</span></div>
-        <div class="row"><span class="label">Opening</span><span class="val" id="yes-opening">--</span></div>
-        <div class="row"><span class="label">Closing</span><span class="val" id="yes-closing">--</span></div>
-        <div class="row"><span class="label">Unrealized</span><span class="val" id="yes-unreal">--</span></div>
-        <div class="row"><span class="label">Realized PnL</span><span class="val" id="yes-pnl">--</span></div>
+  <main class="layout">
+    <section class="panel">
+      <div class="markets" id="markets">
+        <div class="empty">Waiting for backend state...</div>
       </div>
-      <div class="pnl-block">
-        <h3>NO (DOWN)</h3>
-        <div class="row"><span class="label">Holding</span><span class="val" id="no-hold">--</span></div>
-        <div class="row"><span class="label">Avg Price</span><span class="val" id="no-avg">--</span></div>
-        <div class="row"><span class="label">Opening</span><span class="val" id="no-opening">--</span></div>
-        <div class="row"><span class="label">Closing</span><span class="val" id="no-closing">--</span></div>
-        <div class="row"><span class="label">Unrealized</span><span class="val" id="no-unreal">--</span></div>
-        <div class="row"><span class="label">Realized PnL</span><span class="val" id="no-pnl">--</span></div>
+      <div class="market-detail" id="market-detail" hidden>
+        <div class="market-detail-main">
+          <div class="market-detail-title" id="market-title"></div>
+          <div class="market-quotes" id="market-quotes">
+            <span><span class="quote-label">UP BID</span> <span class="quote-price" id="up-bid">--</span></span>
+            <span><span class="quote-label">UP ASK</span> <span class="quote-price" id="up-ask">--</span></span>
+            <span><span class="quote-label">DOWN BID</span> <span class="quote-price" id="down-bid">--</span></span>
+            <span><span class="quote-label">DOWN ASK</span> <span class="quote-price" id="down-ask">--</span></span>
+            <span id="btc-base-item"><span class="quote-label">BTC BASE</span> <span class="quote-price" id="btc-base">--</span></span>
+            <span id="btc-diff-item"><span class="quote-label">BTC DIFF</span> <span class="quote-price" id="btc-diff">--</span></span>
+            <span id="btc-now-item"><span class="quote-label">BTC NOW</span> <span class="quote-price" id="btc-now">--</span></span>
+          </div>
+        </div>
+        <a class="market-link" id="market-link" target="_blank" rel="noopener noreferrer">Polymarket</a>
       </div>
-    </div>
-  </div>
+    </section>
 
-  <!-- Event Log -->
-  <div class="card full-width">
-    <div class="card-title">Event Log</div>
-    <div id="events-log"></div>
-  </div>
-</div>
+    <section class="panel">
+      <div class="dashboard-detail">
+        <div class="chart-row">
+          <div class="chart-header">
+            <span>Token Prices</span>
+            <div class="legend">
+              <span class="legend-item yes"><span class="legend-swatch"></span>Yes token</span>
+              <span class="legend-item no"><span class="legend-swatch"></span>No token</span>
+            </div>
+          </div>
+          <div class="chart-frame">
+            <canvas id="token-chart"></canvas>
+          </div>
+        </div>
+        <div class="chart-row">
+          <div class="chart-header">
+            <span>BTC Diff</span>
+            <div class="legend">
+              <span class="legend-item btc"><span class="legend-swatch"></span>BTC diff</span>
+            </div>
+          </div>
+          <div class="chart-frame">
+            <canvas id="btc-chart"></canvas>
+          </div>
+        </div>
+        <div class="trade-position-row">
+          <section class="subpanel">
+            <div class="subpanel-title">Orders</div>
+            <div class="placeholder">订单列表暂时为空，后续接入订单数据后显示。</div>
+          </section>
+          <section class="subpanel">
+            <div class="subpanel-title">Positions</div>
+            <div class="placeholder">持仓情况暂时为空，后续接入持仓数据后显示。</div>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
 
 <script>
 const $ = id => document.getElementById(id);
-let ws, reconnectDelay = 1000;
-let activeWorkerId = null;
-const workerStates = new Map();
-const workerLogs = new Map();
+const FIVE_MINUTES_MS = 5 * 60 * 1000;
+
+let ws;
+let reconnectDelay = 1000;
+let activeMarketId = null;
+let userSelectedMarket = false;
+let detailsRenderQueued = false;
+const marketStates = new Map();
+const marketHistory = new Map();
+const cssVars = new Map();
 
 function connect() {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -159,174 +361,541 @@ function connect() {
   ws.binaryType = 'arraybuffer';
 
   ws.onopen = () => {
-    $('ws-dot').className = 'dot on';
-    $('ws-status').textContent = 'Connected';
     reconnectDelay = 1000;
   };
 
   ws.onclose = () => {
-    $('ws-dot').className = 'dot off';
-    $('ws-status').textContent = 'Reconnecting...';
     setTimeout(connect, reconnectDelay);
     reconnectDelay = Math.min(reconnectDelay * 1.5, 10000);
   };
 
-  ws.onmessage = (e) => {
-    const d = JSON.parse(new TextDecoder().decode(e.data));
-    const workerId = getWorkerId(d);
-    workerStates.set(workerId, d);
-    addLog(d);
-    if (!activeWorkerId || !workerStates.has(activeWorkerId)) {
-      activeWorkerId = workerId;
+  ws.onerror = () => {
+    console.error('Dashboard websocket error');
+  };
+
+  ws.onmessage = event => {
+    const state = decodeState(event.data);
+    if (!state) return;
+
+    const marketId = getMarketId(state);
+    const hadMarket = marketStates.has(marketId);
+    const previousActiveMarketId = activeMarketId;
+    marketStates.set(marketId, state);
+    appendHistory(marketId, state);
+    if (!activeMarketId || !marketStates.has(activeMarketId) || !userSelectedMarket) {
+      activeMarketId = getDefaultMarketId();
+      userSelectedMarket = false;
     }
-    renderTabs();
-    if (workerId === activeWorkerId) render(d);
+
+    $('latency').textContent = formatLatency(state.ts_ms);
+    if (!hadMarket || activeMarketId !== previousActiveMarketId) {
+      renderMarkets();
+    }
+    if (marketId === activeMarketId || activeMarketId !== previousActiveMarketId) {
+      scheduleDetailsRender();
+    }
   };
 }
 
-function fmt(v, dec = 2) { return v != null ? v.toFixed(dec) : '--'; }
-function fmtUsd(v) { return v != null ? '$' + Math.abs(v).toFixed(2) : '--'; }
-function getWorkerId(d) { return d.worker_id || d.market?.slug || 'worker'; }
-
-function workerLabel(d) {
-  const start = d.market?.start_ts_s;
-  if (start == null) return getWorkerId(d);
-  return new Date(start * 1000).toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false});
+function decodeState(data) {
+  try {
+    const text = data instanceof ArrayBuffer ? new TextDecoder().decode(data) : data;
+    return JSON.parse(text);
+  } catch (error) {
+    console.error('Invalid dashboard state', error);
+    return null;
+  }
 }
 
-function renderTabs() {
-  const tabs = $('worker-tabs');
-  tabs.innerHTML = '';
-  const states = [...workerStates.entries()].sort((a, b) => {
-    return (a[1].market?.start_ts_s || 0) - (b[1].market?.start_ts_s || 0);
+function getMarketId(state) {
+  return state.market?.slug || state.worker_id || 'market';
+}
+
+function getMarketTitle(state) {
+  const startTsS = state.market?.start_ts_s;
+  const endTsS = state.market?.end_ts_s;
+  if (startTsS == null || endTsS == null) return getMarketId(state);
+  return `${formatHourMinute(startTsS)}-${formatHourMinute(endTsS)}`;
+}
+
+function getMarketFullTitle(state) {
+  return state.market?.title || getMarketId(state);
+}
+
+function getDefaultMarketId() {
+  const nowS = Date.now() / 1000;
+  const entries = [...marketStates.entries()];
+  const current = entries
+    .filter(([, state]) => {
+      const startTsS = state.market?.start_ts_s;
+      const endTsS = state.market?.end_ts_s;
+      return startTsS != null && endTsS != null && startTsS <= nowS && nowS < endTsS;
+    })
+    .sort((left, right) => (right[1].market?.start_ts_s || 0) - (left[1].market?.start_ts_s || 0));
+
+  if (current.length > 0) return current[0][0];
+
+  const latest = entries.sort((left, right) => {
+    return (right[1].market?.start_ts_s || 0) - (left[1].market?.start_ts_s || 0);
+  });
+  return latest[0]?.[0] || null;
+}
+
+function formatLatency(tsMs) {
+  if (tsMs == null) return '--';
+  return `${Date.now() - tsMs}ms`;
+}
+
+function formatPrice(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toFixed(2) : '--';
+}
+
+function formatSignedPrice(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '--';
+  return `${number >= 0 ? '+' : ''}${number.toFixed(2)}`;
+}
+
+function formatHourMinute(tsS) {
+  return new Date(tsS * 1000).toLocaleTimeString(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+}
+
+function renderMarkets() {
+  const markets = $('markets');
+  markets.innerHTML = '';
+
+  const entries = [...marketStates.entries()].sort((left, right) => {
+    return (left[1].market?.start_ts_s || 0) - (right[1].market?.start_ts_s || 0);
   });
 
-  for (const [workerId, state] of states) {
-    const tab = document.createElement('button');
-    const title = document.createElement('span');
-    const meta = document.createElement('span');
-    tab.type = 'button';
-    tab.className = 'tab' + (workerId === activeWorkerId ? ' active' : '');
-    title.className = 'tab-title';
-    title.textContent = workerLabel(state);
-    meta.className = 'tab-meta';
-    meta.textContent = `${state.curr_side || 'NONE'} - ${state.reason}`;
-    tab.append(title, meta);
-    tab.onclick = () => {
-      activeWorkerId = workerId;
-      renderTabs();
-      render(state);
+  for (const [marketId, state] of entries) {
+    const button = document.createElement('button');
+
+    button.type = 'button';
+    button.className = 'market' + (marketId === activeMarketId ? ' active' : '');
+    button.textContent = getMarketTitle(state);
+
+    button.onpointerdown = event => {
+      event.preventDefault();
+      selectMarket(marketId);
     };
-    tabs.appendChild(tab);
+    button.onclick = () => selectMarket(marketId);
+    markets.appendChild(button);
   }
 }
 
-function signedUsd(v) {
-  if (v == null) return '--';
-  const cls = v >= 0 ? 'up' : 'dn';
-  const sign = v >= 0 ? '+' : '-';
-  return `<span class="${cls}">${sign}$${Math.abs(v).toFixed(2)}</span>`;
+function selectMarket(marketId) {
+  activeMarketId = marketId;
+  userSelectedMarket = true;
+  renderMarkets();
+  renderActiveDetail();
 }
 
-function fmtDuration(s) {
-  if (s < 0) s = 0;
-  const m = Math.floor(s / 60), sec = Math.floor(s % 60);
-  return `${m}:${sec.toString().padStart(2, '0')}`;
+function renderActiveDetail() {
+  renderMarketDetail();
+  renderDetails();
 }
 
-function render(d) {
-  const nowS = Date.now() / 1000;
-  const latencyMs = Date.now() - d.event_ts_ms;
-  $('latency').textContent = latencyMs + 'ms';
+function scheduleDetailsRender() {
+  if (detailsRenderQueued) return;
+  detailsRenderQueued = true;
 
-  // Market
-  $('market-title').textContent = d.market.title;
-  $('elapsed').textContent = fmtDuration(nowS - d.market.start_ts_s);
-  $('remaining').textContent = fmtDuration(d.market.end_ts_s - nowS);
-
-  // Signal
-  setSideBadge('signal', d.curr_side);
-  setSideBadge('prev-signal', d.prev_side);
-
-  // YES quote
-  $('yes-bid').textContent = fmt(d.yes_quote.best_bid);
-  $('yes-ask').textContent = fmt(d.yes_quote.best_ask);
-  $('yes-mid').textContent = fmt(d.yes_quote.mid, 3);
-  $('yes-spread').textContent = fmt(d.yes_quote.spread, 3);
-
-  // NO quote
-  $('no-bid').textContent = fmt(d.no_quote.best_bid);
-  $('no-ask').textContent = fmt(d.no_quote.best_ask);
-  $('no-mid').textContent = fmt(d.no_quote.mid, 3);
-  $('no-spread').textContent = fmt(d.no_quote.spread, 3);
-
-  // BTC
-  $('btc-bid').textContent = fmt(d.crypto.best_bid);
-  $('btc-ask').textContent = fmt(d.crypto.best_ask);
-  $('btc-mid').textContent = fmt(d.crypto.mid);
-  $('btc-baseline').textContent = fmt(d.crypto.baseline);
-  const changeEl = $('btc-change');
-  changeEl.innerHTML = signedUsd(d.crypto.change);
-
-  // Positions
-  renderPosition('yes', d.yes_position, d.yes_quote.best_bid);
-  renderPosition('no', d.no_position, d.no_quote.best_bid);
-
-  // Log
-  renderLog(getWorkerId(d));
+  const scheduleFrame = window.requestAnimationFrame || (callback => setTimeout(callback, 16));
+  scheduleFrame(() => {
+    detailsRenderQueued = false;
+    renderActiveDetail();
+  });
 }
 
-function renderPosition(prefix, pos, bid) {
-  if (!pos) {
-    ['-hold', '-avg', '-opening', '-closing', '-unreal', '-pnl'].forEach(s => $(prefix + s).textContent = '--');
+function renderMarketDetail() {
+  const detail = $('market-detail');
+  const state = marketStates.get(activeMarketId);
+  if (!state) {
+    detail.hidden = true;
+    $('market-title').textContent = '';
+    renderMarketQuotes(null);
+    $('market-link').removeAttribute('href');
     return;
   }
-  $(prefix + '-hold').textContent = fmt(pos.holding_shares, 4);
-  $(prefix + '-avg').textContent = fmt(pos.holding_avg_price);
-  $(prefix + '-opening').textContent = fmt(pos.opening_shares, 4);
-  $(prefix + '-closing').textContent = fmt(pos.closing_shares, 4);
-  const unreal = pos.holding_shares * bid - pos.holding_cost;
-  $(prefix + '-unreal').innerHTML = signedUsd(unreal);
-  $(prefix + '-pnl').innerHTML = signedUsd(pos.realized_pnl);
-}
 
-function setSideBadge(id, side) {
-  const el = $(id);
-  el.textContent = side || '--';
-  el.className = 'side-badge ' + (side || 'NONE');
-}
+  const slug = state.market?.slug;
+  detail.hidden = false;
+  $('market-title').textContent = getMarketFullTitle(state);
+  renderMarketQuotes(state);
 
-const MAX_LOG = 50;
-function addLog(d) {
-  const workerId = getWorkerId(d);
-  const entries = workerLogs.get(workerId) || [];
-  const time = new Date(d.event_ts_ms).toLocaleTimeString('en-US', {hour12: false, fractionalSecondDigits: 3});
-  const change = d.crypto.change;
-  const changeText = change == null ? '--' : `${change >= 0 ? '+' : ''}${fmt(change)}`;
-  entries.unshift(`${time} [${d.reason}] YES ${fmt(d.yes_quote.mid,3)} | NO ${fmt(d.no_quote.mid,3)} | BTC ${fmt(d.crypto.mid)} (${changeText})`);
-  while (entries.length > MAX_LOG) entries.pop();
-  workerLogs.set(workerId, entries);
-}
-
-function renderLog(workerId) {
-  const log = $('events-log');
-  log.innerHTML = '';
-  for (const text of workerLogs.get(workerId) || []) {
-    const entry = document.createElement('div');
-    entry.textContent = text;
-    log.appendChild(entry);
+  const link = $('market-link');
+  if (slug) {
+    link.href = `https://polymarket.com/event/${encodeURIComponent(slug)}`;
+    link.hidden = false;
+  } else {
+    link.removeAttribute('href');
+    link.hidden = true;
   }
 }
 
-// Update timers every second
-setInterval(() => {
-  const marketState = workerStates.get(activeWorkerId);
-  if (!marketState) return;
-  const nowS = Date.now() / 1000;
-  $('elapsed').textContent = fmtDuration(nowS - marketState.market.start_ts_s);
-  $('remaining').textContent = fmtDuration(marketState.market.end_ts_s - nowS);
-}, 1000);
+function renderMarketQuotes(state) {
+  $('up-bid').textContent = formatPrice(state?.yes_token_quote?.bid);
+  $('up-ask').textContent = formatPrice(state?.yes_token_quote?.ask);
+  $('down-bid').textContent = formatPrice(state?.no_token_quote?.bid);
+  $('down-ask').textContent = formatPrice(state?.no_token_quote?.ask);
 
+  const showBtc = isCurrentMarket(state);
+  $('btc-base-item').hidden = !showBtc;
+  $('btc-diff-item').hidden = !showBtc;
+  $('btc-now-item').hidden = !showBtc;
+
+  $('btc-base').textContent = formatPrice(state?.crypto_quote?.base);
+  $('btc-diff').textContent = formatSignedPrice(state?.crypto_quote?.diff);
+  $('btc-now').textContent = formatPrice(state?.crypto_quote?.curr);
+}
+
+function isCurrentMarket(state) {
+  const startTsS = state?.market?.start_ts_s;
+  const endTsS = state?.market?.end_ts_s;
+  const nowS = Date.now() / 1000;
+  return startTsS != null && endTsS != null && startTsS <= nowS && nowS < endTsS;
+}
+
+function appendHistory(marketId, state) {
+  const tsMs = Number(state.ts_ms);
+  if (!Number.isFinite(tsMs)) return;
+
+  const samples = marketHistory.get(marketId) || [];
+  samples.push({
+    tsMs,
+    yes: getMidPrice(state?.yes_token_quote),
+    no: getMidPrice(state?.no_token_quote),
+    btc: toFiniteNumber(state?.crypto_quote?.curr),
+    btcBase: toFiniteNumber(state?.crypto_quote?.base),
+    btcDiff: getBtcDiff(state?.crypto_quote),
+  });
+
+  const windowRange = getTimeWindow(state);
+  const maxTsMs = Math.max(windowRange.endMs, tsMs);
+  const pruned = samples.filter(sample => {
+    return sample.tsMs >= windowRange.startMs && sample.tsMs <= maxTsMs;
+  });
+
+  marketHistory.set(marketId, pruned);
+}
+
+function getMidPrice(quote) {
+  const bid = toFiniteNumber(quote?.bid);
+  const ask = toFiniteNumber(quote?.ask);
+  if (bid == null && ask == null) return null;
+  if (bid == null) return ask;
+  if (ask == null) return bid;
+  return (bid + ask) / 2;
+}
+
+function getBtcDiff(quote) {
+  const diff = toFiniteNumber(quote?.diff);
+  if (diff != null) return diff;
+
+  const curr = toFiniteNumber(quote?.curr);
+  const base = toFiniteNumber(quote?.base);
+  if (curr == null || base == null) return null;
+  return curr - base;
+}
+
+function toFiniteNumber(value) {
+  if (value == null || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function getTimeWindow(state) {
+  const startTsS = Number(state?.market?.start_ts_s);
+  const endTsS = Number(state?.market?.end_ts_s);
+  if (Number.isFinite(startTsS) && Number.isFinite(endTsS) && endTsS > startTsS) {
+    const startMs = startTsS * 1000;
+    return { startMs, endMs: startMs + FIVE_MINUTES_MS };
+  }
+
+  const nowMs = Number(state?.ts_ms) || Date.now();
+  return { startMs: nowMs - FIVE_MINUTES_MS, endMs: nowMs };
+}
+
+function renderDetails() {
+  const state = marketStates.get(activeMarketId);
+  if (!state) {
+    drawEmptyChart($('token-chart'), 'Waiting for backend state...');
+    drawEmptyChart($('btc-chart'), 'Waiting for backend state...');
+    return;
+  }
+
+  const history = marketHistory.get(activeMarketId) || [];
+  const windowRange = getTimeWindow(state);
+  drawTokenChart($('token-chart'), history, windowRange);
+  drawBtcChart($('btc-chart'), history, windowRange);
+}
+
+function drawTokenChart(canvas, history, windowRange) {
+  drawChart(canvas, {
+    series: [
+      { color: getCssVar('--green'), samples: history.map(sample => ({ x: sample.tsMs, y: sample.yes })) },
+      { color: getCssVar('--red'), samples: history.map(sample => ({ x: sample.tsMs, y: sample.no })) },
+    ],
+    xMin: windowRange.startMs,
+    xMax: windowRange.endMs,
+    yMin: 0,
+    yMax: 1,
+    yTicks: [0, 0.25, 0.5, 0.75, 1],
+    yFormat: value => value.toFixed(2),
+    emptyText: 'Waiting for token prices...',
+  });
+}
+
+function drawBtcChart(canvas, history, windowRange) {
+  const diffs = history.map(sample => sample.btcDiff).filter(value => value != null);
+
+  if (diffs.length === 0) {
+    drawEmptyChart(canvas, 'Waiting for BTC diff...');
+    return;
+  }
+
+  let yMin = Math.min(0, ...diffs);
+  let yMax = Math.max(0, ...diffs);
+  const absMax = Math.max(Math.abs(yMin), Math.abs(yMax), 5);
+  const roundedMax = Math.ceil((absMax * 1.15) / 5) * 5;
+  yMin = -roundedMax;
+  yMax = roundedMax;
+
+  const ticks = buildTicks(yMin, yMax, 5);
+  if (!ticks.includes(0)) {
+    ticks.push(0);
+    ticks.sort((left, right) => left - right);
+  }
+
+  drawChart(canvas, {
+    series: [
+      { color: getCssVar('--yellow'), samples: history.map(sample => ({ x: sample.tsMs, y: sample.btcDiff })) },
+    ],
+    xMin: windowRange.startMs,
+    xMax: windowRange.endMs,
+    yMin,
+    yMax,
+    yTicks: ticks,
+    yFormat: value => `${value >= 0 ? '+' : ''}${value.toFixed(0)}`,
+    zeroLine: true,
+    emptyText: 'Waiting for BTC diff...',
+  });
+}
+
+function drawChart(canvas, config) {
+  const { ctx, width, height } = setupCanvas(canvas);
+  const padding = { top: 16, right: 18, bottom: 28, left: 62 };
+  const plot = {
+    x: padding.left,
+    y: padding.top,
+    w: Math.max(width - padding.left - padding.right, 1),
+    h: Math.max(height - padding.top - padding.bottom, 1),
+  };
+
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = getCssVar('--bg');
+  ctx.fillRect(0, 0, width, height);
+
+  const hasData = config.series.some(series => {
+    return series.samples.some(sample => {
+      return sample.y != null && sample.x >= config.xMin && sample.x <= config.xMax;
+    });
+  });
+
+  drawAxes(ctx, plot, config);
+  if (config.zeroLine) {
+    drawZeroLine(ctx, plot, config);
+  }
+  if (!hasData) {
+    drawCenteredText(ctx, width, height, config.emptyText);
+    return;
+  }
+
+  for (const series of config.series) {
+    drawSeries(ctx, plot, series, config);
+  }
+}
+
+function setupCanvas(canvas) {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const width = Math.max(Math.floor(rect.width), 1);
+  const height = Math.max(Math.floor(rect.height), 1);
+  const pixelWidth = Math.max(Math.floor(width * dpr), 1);
+  const pixelHeight = Math.max(Math.floor(height * dpr), 1);
+
+  if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+    canvas.width = pixelWidth;
+    canvas.height = pixelHeight;
+  }
+
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, width, height };
+}
+
+function drawAxes(ctx, plot, config) {
+  ctx.save();
+  ctx.strokeStyle = getCssVar('--border');
+  ctx.lineWidth = 1;
+  ctx.fillStyle = getCssVar('--muted');
+  ctx.font = '11px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
+  ctx.textBaseline = 'middle';
+
+  for (const tick of config.yTicks) {
+    const y = yToPx(tick, plot, config);
+    ctx.beginPath();
+    ctx.moveTo(plot.x, y);
+    ctx.lineTo(plot.x + plot.w, y);
+    ctx.stroke();
+    ctx.textAlign = 'right';
+    ctx.fillText(config.yFormat(tick), plot.x - 8, y);
+  }
+
+  const xTicks = buildRelativeTimeTicks(config.xMin, config.xMax);
+  ctx.textBaseline = 'top';
+  for (const tick of xTicks) {
+    const x = xToPx(tick, plot, config);
+    ctx.beginPath();
+    ctx.moveTo(x, plot.y);
+    ctx.lineTo(x, plot.y + plot.h);
+    ctx.stroke();
+    if (shouldLabelRelativeTick(tick, config.xMin, config.xMax)) {
+      ctx.textAlign = tick === config.xMin ? 'left' : tick === config.xMax ? 'right' : 'center';
+      ctx.fillText(formatRelativeChartTime(tick, config.xMin), x, plot.y + plot.h + 8);
+    }
+  }
+
+  ctx.restore();
+}
+
+function drawZeroLine(ctx, plot, config) {
+  if (config.yMin > 0 || config.yMax < 0) return;
+
+  const y = yToPx(0, plot, config);
+  ctx.save();
+  ctx.strokeStyle = getCssVar('--muted');
+  ctx.lineWidth = 1;
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  ctx.moveTo(plot.x, y);
+  ctx.lineTo(plot.x + plot.w, y);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawSeries(ctx, plot, series, config) {
+  const points = [];
+  for (const sample of series.samples) {
+    if (sample.y == null || sample.x < config.xMin || sample.x > config.xMax) continue;
+
+    const point = {
+      x: xToPx(sample.x, plot, config),
+      y: yToPx(sample.y, plot, config),
+    };
+    const last = points[points.length - 1];
+    if (last && Math.round(last.x) === Math.round(point.x)) {
+      points[points.length - 1] = point;
+    } else {
+      points.push(point);
+    }
+  }
+
+  if (points.length === 0) return;
+
+  ctx.save();
+  ctx.strokeStyle = series.color;
+  ctx.fillStyle = series.color;
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+
+  ctx.beginPath();
+  points.forEach((point, index) => {
+    if (index === 0) ctx.moveTo(point.x, point.y);
+    else ctx.lineTo(point.x, point.y);
+  });
+  ctx.stroke();
+
+  const last = points[points.length - 1];
+  ctx.beginPath();
+  ctx.arc(last.x, last.y, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawEmptyChart(canvas, text) {
+  const { ctx, width, height } = setupCanvas(canvas);
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = getCssVar('--bg');
+  ctx.fillRect(0, 0, width, height);
+  drawCenteredText(ctx, width, height, text);
+}
+
+function drawCenteredText(ctx, width, height, text) {
+  ctx.save();
+  ctx.fillStyle = getCssVar('--muted');
+  ctx.font = '12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, width / 2, height / 2);
+  ctx.restore();
+}
+
+function xToPx(value, plot, config) {
+  return plot.x + ((value - config.xMin) / Math.max(config.xMax - config.xMin, 1)) * plot.w;
+}
+
+function yToPx(value, plot, config) {
+  return plot.y + (1 - (value - config.yMin) / Math.max(config.yMax - config.yMin, 1)) * plot.h;
+}
+
+function buildTicks(min, max, count) {
+  if (count <= 1) return [min];
+  const ticks = [];
+  for (let index = 0; index < count; index += 1) {
+    ticks.push(min + ((max - min) * index) / (count - 1));
+  }
+  return ticks;
+}
+
+function buildRelativeTimeTicks(startMs, endMs) {
+  const ticks = [];
+  for (let tsMs = startMs; tsMs <= endMs + 1; tsMs += 30 * 1000) {
+    ticks.push(tsMs);
+  }
+  return ticks;
+}
+
+function formatRelativeChartTime(tsMs, startMs) {
+  const elapsedS = Math.max(Math.round((tsMs - startMs) / 1000), 0);
+  const minutes = Math.floor(elapsedS / 60).toString().padStart(2, '0');
+  const seconds = (elapsedS % 60).toString().padStart(2, '0');
+  return `${minutes}:${seconds}`;
+}
+
+function shouldLabelRelativeTick(tsMs, startMs, endMs) {
+  const elapsedS = Math.round((tsMs - startMs) / 1000);
+  return elapsedS % 60 === 0 || tsMs === endMs;
+}
+
+function getCssVar(name) {
+  if (!cssVars.has(name)) {
+    cssVars.set(name, getComputedStyle(document.documentElement).getPropertyValue(name).trim());
+  }
+  return cssVars.get(name);
+}
+
+window.addEventListener('resize', () => {
+  cssVars.clear();
+  renderDetails();
+});
+renderActiveDetail();
 connect();
 </script>
 </body>

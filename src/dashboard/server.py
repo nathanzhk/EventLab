@@ -95,33 +95,30 @@ async def _broadcast() -> None:
 
 def serialize_state(event: RuntimeStateEvent) -> dict[str, Any]:
     return {
-        "worker_id": event.market.slug,
-        "event_ts_ms": event.event_ts_ms,
-        "reason": event.reason,
+        "ts_ms": event.event_ts_ms,
         "market": {
             "slug": event.market.slug,
             "title": event.market.title,
             "start_ts_s": event.market.start_ts_s,
             "end_ts_s": event.market.end_ts_s,
         },
-        "yes_quote": _serialize_quote(event.yes_token_quote),
-        "no_quote": _serialize_quote(event.no_token_quote),
         "crypto_quote": {
             "curr": event.crypto_quote.curr_price,
             "base": event.crypto_quote.base_price,
             "diff": event.crypto_quote.diff_price,
         },
-        "prev_side": event.prev_side,
-        "curr_side": event.curr_side,
+        "yes_token_quote": {
+            "bid": event.yes_token_quote.best_bid,
+            "ask": event.yes_token_quote.best_ask,
+            "mid": event.yes_token_quote.mid,
+        },
+        "no_token_quote": {
+            "bid": event.no_token_quote.best_bid,
+            "ask": event.no_token_quote.best_ask,
+            "mid": event.no_token_quote.mid,
+        },
         "yes_position": _serialize_position(event.yes_token_position),
         "no_position": _serialize_position(event.no_token_position),
-    }
-
-
-def _serialize_quote(q: Any) -> dict[str, Any]:
-    return {
-        "best_bid": q.best_bid,
-        "best_ask": q.best_ask,
     }
 
 
