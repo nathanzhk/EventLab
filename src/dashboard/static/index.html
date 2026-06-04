@@ -309,8 +309,8 @@
           <div class="chart-header">
             <span>Token Prices</span>
             <div class="legend">
-              <span class="legend-item yes"><span class="legend-swatch"></span>Yes token</span>
-              <span class="legend-item no"><span class="legend-swatch"></span>No token</span>
+              <span class="legend-item yes"><span class="legend-swatch"></span>UP</span>
+              <span class="legend-item no"><span class="legend-swatch"></span>DOWN</span>
             </div>
           </div>
           <div class="chart-frame">
@@ -786,7 +786,7 @@ function drawBtcChart(canvas, history, windowRange) {
   let yMin = Math.min(0, ...diffs);
   let yMax = Math.max(0, ...diffs);
   const absMax = Math.max(Math.abs(yMin), Math.abs(yMax), 5);
-  const roundedMax = Math.ceil((absMax * 1.15) / 5) * 5;
+  const roundedMax = Math.ceil((absMax * 1.15) / 20) * 20;
   yMin = -roundedMax;
   yMax = roundedMax;
 
@@ -805,15 +805,14 @@ function drawBtcChart(canvas, history, windowRange) {
     yMin,
     yMax,
     yTicks: ticks,
-    yFormat: value => `${value >= 0 ? '+' : ''}${value.toFixed(0)}`,
-    zeroLine: true,
+    yFormat: value => `${value > 0 ? '+' : ''}${value.toFixed(0)}`,
     emptyText: 'Waiting for BTC diff...',
   });
 }
 
 function drawChart(canvas, config) {
   const { ctx, width, height } = setupCanvas(canvas);
-  const padding = { top: 16, right: 18, bottom: 28, left: 62 };
+  const padding = { top: 16, right: 18, bottom: 34, left: 62 };
   const plot = {
     x: padding.left,
     y: padding.top,
@@ -839,6 +838,8 @@ function drawChart(canvas, config) {
     drawCenteredText(ctx, width, height, config.emptyText);
     return;
   }
+
+  drawProgressMarker(ctx, plot, config);
 
   for (const series of config.series) {
     drawSeries(ctx, plot, series, config);
@@ -910,6 +911,41 @@ function drawZeroLine(ctx, plot, config) {
   ctx.moveTo(plot.x, y);
   ctx.lineTo(plot.x + plot.w, y);
   ctx.stroke();
+  ctx.restore();
+}
+
+function drawProgressMarker(ctx, plot, config) {
+  const markerTsMs = getLatestVisibleSampleTs(config);
+  if (markerTsMs == null) return;
+
+  const x = xToPx(markerTsMs, plot, config);
+  const countdown = formatCountdownTime(config.xMax - markerTsMs);
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(230, 237, 243, 0.55)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 5]);
+  ctx.beginPath();
+  ctx.moveTo(x, plot.y);
+  ctx.lineTo(x, plot.y + plot.h);
+  ctx.stroke();
+
+  ctx.setLineDash([]);
+  ctx.font = '11px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+
+  const labelY = plot.y + plot.h + 8;
+  const textWidth = ctx.measureText(countdown).width;
+  const labelX = Math.min(
+    Math.max(x, plot.x + textWidth / 2 + 4),
+    plot.x + plot.w - textWidth / 2 - 4,
+  );
+
+  ctx.fillStyle = getCssVar('--bg');
+  ctx.fillRect(labelX - textWidth / 2 - 4, labelY - 2, textWidth + 8, 15);
+  ctx.fillStyle = getCssVar('--text');
+  ctx.fillText(countdown, labelX, labelY);
   ctx.restore();
 }
 
@@ -1018,6 +1054,26 @@ function formatRelativeChartTime(tsMs, startMs) {
   const minutes = Math.floor(elapsedS / 60).toString().padStart(2, '0');
   const seconds = (elapsedS % 60).toString().padStart(2, '0');
   return `${minutes}:${seconds}`;
+}
+
+function formatCountdownTime(durationMs) {
+  const remainingS = Math.max(Math.ceil(durationMs / 1000), 0);
+  const minutes = Math.floor(remainingS / 60).toString().padStart(2, '0');
+  const seconds = (remainingS % 60).toString().padStart(2, '0');
+  return `${minutes}:${seconds}`;
+}
+
+function getLatestVisibleSampleTs(config) {
+  let latestTsMs = null;
+  for (const series of config.series) {
+    for (const sample of series.samples) {
+      if (sample.y == null || sample.x < config.xMin || sample.x > config.xMax) continue;
+      if (latestTsMs == null || sample.x > latestTsMs) {
+        latestTsMs = sample.x;
+      }
+    }
+  }
+  return latestTsMs;
 }
 
 function shouldLabelRelativeTick(tsMs, startMs, endMs) {
