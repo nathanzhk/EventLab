@@ -13,14 +13,7 @@ from .time import fmt_ts_s
 
 _LOG_DIR = Path(__file__).resolve().parents[2] / "logs"
 _LOG_FORMAT = "%(asctime)s [%(levelname)s] [%(name)s] %(message)s"
-_QUOTE_LOGGER_NAMES = frozenset(
-    {
-        "STATE",
-        "MARKET QUOTE",
-        "CRYPTO QUOTE",
-        "BINANCE QUOTE",
-    }
-)
+_QUOTE_LOGGER_NAMES = frozenset({"STATE"})
 _TRADE_LOGGER_NAMES = frozenset(
     {
         "TRADE",
