@@ -7,4 +7,5 @@ uv = "latest"
 python.uv_venv_auto = "source"
 
 [tasks.start]
-run = "PYTHONPATH=src uv run python -m main"
+usage = 'arg "<mode>" default="mock"'
+run = 'PYTHONPATH=src uv run python -m main --execution-mode "$usage_mode"'

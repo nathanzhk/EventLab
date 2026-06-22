@@ -1,11 +1,10 @@
-from .clients import MakerTradeClient, TakerTradeClient, TradeClient
-from .component import market_trade_component
-from .stream import MarketTradeStream
+from .clients import MakerTradeClient, TakerTradeClient
+from .component import live_trade_component
+from .stream import LiveTradeStream
 
 __all__ = [
-    "TradeClient",
     "MakerTradeClient",
     "TakerTradeClient",
-    "MarketTradeStream",
-    "market_trade_component",
+    "LiveTradeStream",
+    "live_trade_component",
 ]

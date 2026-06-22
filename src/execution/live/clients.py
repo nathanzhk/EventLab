@@ -27,7 +27,7 @@ from utils.logger import get_logger
 from .stream import build_order_event, build_trade_event
 
 
-class TradeClient:
+class LiveTradeClient:
     role: Role
     post_only: bool
     order_type: OrderType
@@ -303,13 +303,13 @@ class TradeClient:
         return order_id
 
 
-class MakerTradeClient(TradeClient):
+class MakerTradeClient(LiveTradeClient):
     role: Role = Role.MAKER
     post_only: bool = True
     order_type: OrderType = OrderType.GTC  # type: ignore
 
 
-class TakerTradeClient(TradeClient):
+class TakerTradeClient(LiveTradeClient):
     role: Role = Role.TAKER
     post_only: bool = False
     order_type: OrderType = OrderType.FOK  # type: ignore

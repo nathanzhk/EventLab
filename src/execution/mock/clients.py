@@ -7,21 +7,21 @@ from execution.events import MarketOrderEvent, MarketTradeEvent
 from models import Market, Token
 from utils.logger import get_logger
 
-from .simulator import PaperExchangeSimulator
+from .store import MockOrderStore
 
 
-class PaperTradeClient:
+class MockTradeClient:
     role: Role
 
-    def __init__(self, simulator: PaperExchangeSimulator) -> None:
-        self._simulator = simulator
-        self.logger = get_logger(f"PAPER-{self.role}")
+    def __init__(self, store: MockOrderStore) -> None:
+        self._store = store
+        self.logger = get_logger(f"MOCK-{self.role}")
 
     def warm_up(self, market: Market) -> None:
         self.logger.debug("warm up %s", market.slug)
 
     def buy(self, token: Token, shares: float, price: float) -> str | None:
-        return self._simulator.submit_order(
+        return self._store.add_order(
             token=token,
             side=Side.BUY,
             role=self.role,
@@ -30,7 +30,7 @@ class PaperTradeClient:
         )
 
     def sell(self, token: Token, shares: float, price: float) -> str | None:
-        return self._simulator.submit_order(
+        return self._store.add_order(
             token=token,
             side=Side.SELL,
             role=self.role,
@@ -67,20 +67,20 @@ class PaperTradeClient:
         return 0.0
 
     def get_order_by_id(self, order_id: str) -> MarketOrderEvent | None:
-        return self._simulator.get_order_by_id(order_id)
+        return self._store.get_order(order_id)
 
     def get_trade_by_id(self, trade_id: str) -> MarketTradeEvent | None:
-        return self._simulator.get_trade_by_id(trade_id)
+        return self._store.get_trade(trade_id)
 
     def cancel_order_by_id(self, order_id: str) -> tuple[bool, str]:
-        return self._simulator.cancel_order(order_id)
+        return self._store.cancel_order(order_id)
 
 
-class PaperMakerTradeClient(PaperTradeClient):
+class MockMakerTradeClient(MockTradeClient):
     role: Role = Role.MAKER
 
 
-class PaperTakerTradeClient(PaperTradeClient):
+class MockTakerTradeClient(MockTradeClient):
     role: Role = Role.TAKER
 
 

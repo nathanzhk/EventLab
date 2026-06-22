@@ -12,8 +12,8 @@ from utils.logger import get_logger
 from utils.notification import send_trade
 from utils.time import now_ts_ms
 
+from .client import TradeClient
 from .events import CurrentPositionEvent, MarketOrderEvent, MarketTradeEvent
-from .live import TradeClient
 
 logger = get_logger("MANAGER")
 

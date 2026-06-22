@@ -1,12 +1,12 @@
-from .clients import PaperMakerTradeClient, PaperTakerTradeClient
-from .component import paper_match_component
-from .simulator import PaperExchangeSimulator
-from .stream import PaperTradeStream
+from .clients import MockMakerTradeClient, MockTakerTradeClient
+from .component import mock_trade_component
+from .store import MockOrderStore
+from .stream import MockTradeStream
 
 __all__ = [
-    "PaperExchangeSimulator",
-    "PaperMakerTradeClient",
-    "PaperTakerTradeClient",
-    "PaperTradeStream",
-    "paper_match_component",
+    "MockOrderStore",
+    "MockMakerTradeClient",
+    "MockTakerTradeClient",
+    "MockTradeStream",
+    "mock_trade_component",
 ]

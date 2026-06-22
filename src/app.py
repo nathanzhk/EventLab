@@ -20,18 +20,13 @@ from datasource.market import (
 from execution.component import execution_component
 from execution.engine import ExecutionEngine
 from execution.events import MarketOrderEvent, MarketTradeEvent
-from execution.live import (
-    MakerTradeClient,
-    MarketTradeStream,
-    TakerTradeClient,
-    market_trade_component,
-)
+from execution.live import LiveTradeStream, MakerTradeClient, TakerTradeClient, live_trade_component
 from execution.mock import (
-    PaperExchangeSimulator,
-    PaperMakerTradeClient,
-    PaperTakerTradeClient,
-    PaperTradeStream,
-    paper_match_component,
+    MockMakerTradeClient,
+    MockOrderStore,
+    MockTakerTradeClient,
+    MockTradeStream,
+    mock_trade_component,
 )
 from models import Market
 from prediction.component import strategy_component
@@ -46,12 +41,11 @@ ExecutionMode = Literal["live", "mock"]
 class RuntimeContext:
     bus: EventBus
     market: Market
+    crypto_quote_stream: AsyncIterable[CryptoQuoteEvent]
+    market_quote_stream: AsyncIterable[MarketQuoteEvent]
     strategy_engine: StrategyEngine
     execution_engine: ExecutionEngine
-    paper_simulator: PaperExchangeSimulator | None
-    market_quote_stream: AsyncIterable[MarketQuoteEvent]
-    market_trade_stream: AsyncIterable[MarketOrderEvent | MarketTradeEvent]
-    crypto_quote_stream: AsyncIterable[CryptoQuoteEvent]
+    trade_stream: AsyncIterable[MarketOrderEvent | MarketTradeEvent]
 
 
 class RuntimeComponent(Protocol):
@@ -69,26 +63,27 @@ class Runtime:
         market: Market,
         symbol: str,
         strategy: Strategy,
-        execution_mode: ExecutionMode = "live",
+        execution_mode: ExecutionMode = "mock",
     ) -> None:
         self._component_factories: list[ComponentFactory] = []
         self._execution_mode = execution_mode
         bus = EventBus()
-        paper_simulator: PaperExchangeSimulator | None = None
-        if execution_mode == "mock":
-            paper_simulator = PaperExchangeSimulator()
-            maker_client = PaperMakerTradeClient(paper_simulator)
-            taker_client = PaperTakerTradeClient(paper_simulator)
-            market_trade_stream = PaperTradeStream(paper_simulator)
-        else:
+        if execution_mode == "live":
             maker_client = MakerTradeClient()
             taker_client = TakerTradeClient()
-            market_trade_stream = MarketTradeStream(maker_client.get_credentials())
+            trade_stream = LiveTradeStream(maker_client.get_credentials())
+        else:
+            store = MockOrderStore()
+            maker_client = MockMakerTradeClient(store)
+            taker_client = MockTakerTradeClient(store)
+            trade_stream = MockTradeStream(store)
         maker_client.warm_up(market)
         taker_client.warm_up(market)
         self._context = RuntimeContext(
             bus=bus,
             market=market,
+            crypto_quote_stream=CryptoQuoteStream(symbol=symbol, market=market),
+            market_quote_stream=MarketQuoteStream(market),
             strategy_engine=StrategyEngine(strategy),
             execution_engine=ExecutionEngine(
                 market,
@@ -96,35 +91,26 @@ class Runtime:
                 taker_client,
                 event_publisher=bus,
             ),
-            paper_simulator=paper_simulator,
-            market_quote_stream=MarketQuoteStream(market),
-            market_trade_stream=market_trade_stream,
-            crypto_quote_stream=CryptoQuoteStream(symbol=symbol, market=market),
+            trade_stream=trade_stream,
         )
         self._register_components()
 
     async def run(self) -> None:
-        try:
-            async with asyncio.TaskGroup() as tasks:
-                for component_factory in self._component_factories:
-                    component_factory(self._context).start(tasks)
-        finally:
-            if self._context.paper_simulator is not None:
-                self._context.paper_simulator.close()
+        async with asyncio.TaskGroup() as tasks:
+            for component_factory in self._component_factories:
+                component_factory(self._context).start(tasks)
 
     async def settle_market(self, outcome: str) -> None:
         await self._context.execution_engine.settle_market(outcome)
 
     def _register_components(self) -> None:
-        self._register_component(strategy_component())
-        self._register_component(execution_component())
-        self._register_component(market_quote_component())
-        if self._execution_mode == "paper":
-            self._register_component(paper_match_component())
-        self._register_component(market_trade_component())
-        self._register_component(crypto_quote_component())
-        self._register_component(runtime_state_component())
-        self._register_component(dashboard_component())
-
-    def _register_component(self, factory: ComponentFactory) -> None:
-        self._component_factories.append(factory)
+        self._component_factories.append(runtime_state_component())
+        self._component_factories.append(dashboard_component())
+        self._component_factories.append(crypto_quote_component())
+        self._component_factories.append(market_quote_component())
+        self._component_factories.append(strategy_component())
+        self._component_factories.append(execution_component())
+        if self._execution_mode == "live":
+            self._component_factories.append(live_trade_component())
+        else:
+            self._component_factories.append(mock_trade_component())

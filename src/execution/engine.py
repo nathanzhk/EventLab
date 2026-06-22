@@ -8,8 +8,8 @@ from prediction.events import DesiredPositionEvent
 from utils.logger import get_logger
 from utils.time import now_ts_ms
 
+from .client import TradeClient
 from .events import MarketOrderEvent, MarketTradeEvent
-from .live import TradeClient
 from .manager import EventPublisher, ManagedOrder, OrderManager
 
 logger = get_logger("TRADE")

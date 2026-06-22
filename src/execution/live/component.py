@@ -9,8 +9,8 @@ if TYPE_CHECKING:
     from app import ComponentFactory
 
 
-def market_trade_component() -> ComponentFactory:
+def live_trade_component() -> ComponentFactory:
     return lambda context: StreamComponent[MarketOrderEvent | MarketTradeEvent](
         bus=context.bus,
-        stream=context.market_trade_stream,
+        stream=context.trade_stream,
     )

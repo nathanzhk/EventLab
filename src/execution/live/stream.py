@@ -21,7 +21,7 @@ _PING_INTERVAL_S = 10
 logger = get_logger("MARKET TRADE")
 
 
-class MarketTradeStream:
+class LiveTradeStream:
     def __init__(self, credentials: ApiCreds) -> None:
         self._credentials = credentials
         self._proxy_wallet = Env.POLYMARKET_PROXY_WALLET

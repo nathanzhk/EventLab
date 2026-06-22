@@ -31,7 +31,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--execution-mode",
         choices=("live", "mock"),
-        default="live",
+        default="mock",
         help="live uses real Polymarket clients; mock uses the local simulator",
     )
     parser.add_argument(
