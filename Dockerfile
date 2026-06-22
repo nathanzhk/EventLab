@@ -14,6 +14,6 @@ RUN uv sync --frozen --no-dev --no-install-project
 
 COPY . .
 
-RUN mkdir -p logs
+COPY .env.example .env
 
 CMD ["python", "-m", "main"]
