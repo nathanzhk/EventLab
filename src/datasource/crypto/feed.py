@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
 
 import orjson
@@ -14,17 +15,20 @@ from .binance import BinanceQuote, BinanceQuoteStream
 from .events import CryptoQuoteEvent
 
 MIN_EMIT_INTERVAL_MS = 1
+API_BASE_PRICE_DELAY_S = 3
 
 logger = get_logger("CRYPTO QUOTE")
 
 
 class CryptoQuoteStream:
     def __init__(self, symbol: str, market: Market) -> None:
+        self._symbol = symbol
         self._market = market
         self._binance_feed = BinanceQuoteStream(symbol)
         self._started_before_market = now_ts_ms() < market.start_ts_ms
         self._last_emit_ts_ms: int | None = None
         self._base_price: float | None = None
+        self._api_base_price_task: asyncio.Task[None] | None = None
 
         if not self._started_before_market:
             self._base_price = _load_api_base_price(
@@ -53,6 +57,13 @@ class CryptoQuoteStream:
             and quote.recv_ts_ms >= self._market.start_ts_ms
         ):
             self._base_price = round(quote.mid, 2)
+            logger.info(
+                "ws base price symbol=%s start_ts_ms=%d price=%.2f",
+                self._symbol,
+                self._market.start_ts_ms,
+                self._base_price,
+            )
+            self._schedule_api_base_price_refresh()
 
         if self._base_price is None:
             return None
@@ -62,6 +73,19 @@ class CryptoQuoteStream:
             curr_price=round(quote.mid, 2),
             base_price=self._base_price,
         )
+
+    def _schedule_api_base_price_refresh(self) -> None:
+        self._api_base_price_task = asyncio.create_task(self._refresh_api_base_price())
+
+    async def _refresh_api_base_price(self) -> None:
+        await asyncio.sleep(API_BASE_PRICE_DELAY_S)
+        rest_base_price = await asyncio.to_thread(
+            _load_api_base_price,
+            symbol=self._symbol,
+            start_ts_ms=self._market.start_ts_ms,
+        )
+        if rest_base_price is not None:
+            self._base_price = rest_base_price
 
 
 def _load_api_base_price(*, symbol: str, start_ts_ms: int) -> float | None:
@@ -73,7 +97,7 @@ def _load_api_base_price(*, symbol: str, start_ts_ms: int) -> float | None:
         return None
 
     logger.info(
-        "loaded api base price symbol=%s start_ts_ms=%d price=%.2f",
+        "api base price symbol=%s start_ts_ms=%d price=%.2f",
         symbol,
         start_ts_ms,
         rest_base_price,
