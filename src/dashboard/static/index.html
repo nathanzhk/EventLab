@@ -360,6 +360,123 @@ const marketStates = new Map();
 const marketHistory = new Map();
 const marketChartAnimations = new Map();
 const cssVars = new Map();
+const historyLoads = new Map();
+
+async function loadInitialMarkets() {
+  try {
+    const response = await fetch('/markets');
+    if (!response.ok) return;
+    const markets = await response.json();
+    for (const market of markets) {
+      if (!marketStates.has(market.slug)) {
+        marketStates.set(market.slug, buildMinimalState(market));
+      }
+    }
+    if (markets.length === 0) return;
+    activeMarketId = getDefaultMarketId();
+    if (activeMarketId) {
+      await loadMarketHistory(activeMarketId);
+    }
+    renderMarkets();
+    renderActiveDetail();
+  } catch (error) {
+    console.error('Failed to load initial markets', error);
+  }
+}
+
+function buildMinimalState(market) {
+  return {
+    ts_ms: null,
+    market: {
+      slug: market.slug,
+      title: null,
+      start_ts_s: market.start_ts_s,
+      end_ts_s: market.end_ts_s,
+    },
+    yes_token_quote: { bid: null, ask: null, mid: null },
+    no_token_quote: { bid: null, ask: null, mid: null },
+    crypto_quote: { curr: null, base: null, diff: null },
+    yes_position: null,
+    no_position: null,
+  };
+}
+
+function loadMarketHistory(marketId) {
+  const inflight = historyLoads.get(marketId);
+  if (inflight) return inflight;
+
+  const promise = (async () => {
+    try {
+      const response = await fetch(`/market/${encodeURIComponent(marketId)}/history`);
+      if (!response.ok) return;
+      const data = await response.json();
+      applyHistoryFromApi(marketId, data);
+    } catch (error) {
+      console.error('Failed to load history', marketId, error);
+    } finally {
+      historyLoads.delete(marketId);
+    }
+  })();
+
+  historyLoads.set(marketId, promise);
+  return promise;
+}
+
+function applyHistoryFromApi(marketId, data) {
+  const samples = data.samples.map(s => ({
+    tsMs: s.ts_ms,
+    yes: midOf(s.yes_bid, s.yes_ask),
+    no: midOf(s.no_bid, s.no_ask),
+    btc: toFiniteNumber(s.btc_curr),
+    btcBase: null,
+    btcDiff: toFiniteNumber(s.btc_diff),
+  }));
+  marketHistory.set(marketId, samples);
+
+  const state = marketStates.get(marketId);
+  if (state && samples.length > 0) {
+    const lastRaw = data.samples[data.samples.length - 1];
+    state.ts_ms = lastRaw.ts_ms;
+    state.yes_token_quote = {
+      bid: lastRaw.yes_bid,
+      ask: lastRaw.yes_ask,
+      mid: midOf(lastRaw.yes_bid, lastRaw.yes_ask),
+    };
+    state.no_token_quote = {
+      bid: lastRaw.no_bid,
+      ask: lastRaw.no_ask,
+      mid: midOf(lastRaw.no_bid, lastRaw.no_ask),
+    };
+    state.crypto_quote = {
+      curr: lastRaw.btc_curr,
+      base: state.crypto_quote?.base ?? null,
+      diff: lastRaw.btc_diff,
+    };
+  }
+
+  const animation = getChartAnimation(marketId);
+  const windowRange = state ? getTimeWindow(state) : null;
+  if (samples.length > 0) {
+    const last = samples[samples.length - 1];
+    for (const field of CHART_FIELDS) {
+      animation.display[field] = last[field];
+      animation.target[field] = last[field];
+      animation.transition[field] = null;
+    }
+    animation.hasDisplay = true;
+    animation.lastSampleTsMs = last.tsMs;
+    if (windowRange) animation.windowRange = windowRange;
+  }
+}
+
+function midOf(bid, ask) {
+  const bidNum = toFiniteNumber(bid);
+  const askNum = toFiniteNumber(ask);
+  if (bidNum == null && askNum == null) return null;
+  if (bidNum == null) return askNum;
+  if (askNum == null) return bidNum;
+  return (bidNum + askNum) / 2;
+}
 
 function connect() {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -501,6 +618,16 @@ function selectMarket(marketId) {
   renderMarkets();
   sampleActiveChart(Date.now(), true);
   renderActiveDetail();
+
+  const samples = marketHistory.get(marketId);
+  if (!samples || samples.length === 0) {
+    loadMarketHistory(marketId).then(() => {
+      if (activeMarketId === marketId) {
+        sampleActiveChart(Date.now(), true);
+        renderActiveDetail();
+      }
+    });
+  }
 }
 
 function renderActiveDetail() {
@@ -1108,9 +1235,17 @@ function startChartAnimation() {
   chartAnimationFrame = scheduleFrame(animate);
 }
 
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden || !activeMarketId) return;
+  loadMarketHistory(activeMarketId).then(() => {
+    sampleActiveChart(Date.now(), true);
+    renderActiveDetail();
+  });
+});
+
 renderActiveDetail();
 startChartAnimation();
-connect();
+loadInitialMarkets().finally(connect);
 </script>
 </body>
 </html>
