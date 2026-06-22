@@ -40,6 +40,11 @@ def _parse_args() -> argparse.Namespace:
         default="none",
         help="strategy to run; none only observes market data",
     )
+    parser.add_argument(
+        "--dashboard",
+        action="store_true",
+        help="start the dashboard server; disabled by default",
+    )
     return parser.parse_args()
 
 
@@ -60,10 +65,11 @@ async def run(args: argparse.Namespace) -> None:
         )
     else:
         async with asyncio.TaskGroup() as tasks:
-            tasks.create_task(
-                serve_dashboard(),
-                name="dashboard-server",
-            )
+            if args.dashboard:
+                tasks.create_task(
+                    serve_dashboard(),
+                    name="dashboard-server",
+                )
             tasks.create_task(
                 run_supervisor(
                     execution_mode=args.execution_mode,

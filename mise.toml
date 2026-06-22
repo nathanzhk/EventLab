@@ -7,5 +7,12 @@ uv = "latest"
 python.uv_venv_auto = "source"
 
 [tasks.start]
-usage = 'arg "<mode>" default="mock"'
-run = 'PYTHONPATH=src uv run python -m main --execution-mode "$usage_mode"'
+usage = '''
+arg "<mode>" default="mock"
+arg "<dashboard>" default=""
+'''
+run = '''
+PYTHONPATH=src uv run python -m main \
+  --execution-mode "$usage_mode" \
+  $([ "$usage_dashboard" = "dashboard" ] && echo --dashboard)
+'''
