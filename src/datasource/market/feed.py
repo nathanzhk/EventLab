@@ -71,7 +71,6 @@ class MarketQuoteStream:
             token_id = message["asset_id"]
             best_bid = float(message["best_bid"])
             best_ask = float(message["best_ask"])
-            spread = float(message["spread"])
         except Exception:
             return None
 
@@ -90,9 +89,8 @@ class MarketQuoteStream:
             exch_ts_ms=ts_ms,
             market=market,
             token=token,
-            best_bid=round(best_bid, 3),
-            best_ask=round(best_ask, 3),
-            spread=round(spread, 3),
+            best_bid=round(best_bid, 2),
+            best_ask=round(best_ask, 2),
         )
 
     async def _heartbeat(self, ws: ClientConnection, ws_lock: asyncio.Lock) -> None:
