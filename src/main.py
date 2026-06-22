@@ -148,9 +148,11 @@ async def run_supervisor(
     logger.info("execution_mode=%s, strategy=%s", execution_mode, strategy_name)
 
     running: dict[int, asyncio.subprocess.Process] = {}
+    watchers: set[asyncio.Task] = set()
     try:
         await _create_worker(
             running,
+            watchers,
             BTC5mMarket.curr_market(),
             execution_mode=execution_mode,
             strategy_name=strategy_name,
@@ -160,18 +162,22 @@ async def run_supervisor(
             await sleep_until(next_market.start_ts_s - _MARKET_PREWARM_S)
             await _create_worker(
                 running,
+                watchers,
                 next_market,
                 execution_mode=execution_mode,
                 strategy_name=strategy_name,
             )
             await sleep_until(next_market.start_ts_s)
-            await _cleanup_workers(running)
     finally:
+        for watcher in watchers:
+            watcher.cancel()
+        await asyncio.gather(*watchers, return_exceptions=True)
         await _terminate_workers(running)
 
 
 async def _create_worker(
     running: dict[int, asyncio.subprocess.Process],
+    watchers: set[asyncio.Task],
     market: BTC5mMarket,
     *,
     execution_mode: ExecutionMode,
@@ -195,16 +201,25 @@ async def _create_worker(
     running[market.start_ts_s] = proc
     logger.info("started worker pid=%s market=%s", proc.pid, market.slug)
 
+    watcher = asyncio.create_task(
+        _watch_worker(running, market.start_ts_s, proc),
+        name=f"watch-{market.slug}",
+    )
+    watchers.add(watcher)
+    watcher.add_done_callback(watchers.discard)
 
-async def _cleanup_workers(running: dict[int, asyncio.subprocess.Process]) -> None:
-    for start_ts_s, proc in list(running.items()):
-        if proc.returncode is None:
-            continue
-        returncode = await proc.wait()
-        if returncode == 0:
-            logger.info("worker exited start_ts=%s", start_ts_s)
-        else:
-            logger.error("worker exited start_ts=%s returncode=%s", start_ts_s, returncode)
+
+async def _watch_worker(
+    running: dict[int, asyncio.subprocess.Process],
+    start_ts_s: int,
+    proc: asyncio.subprocess.Process,
+) -> None:
+    returncode = await proc.wait()
+    if returncode == 0:
+        logger.info("worker exited start_ts=%s", start_ts_s)
+    else:
+        logger.error("worker exited start_ts=%s returncode=%s", start_ts_s, returncode)
+    if running.get(start_ts_s) is proc:
         del running[start_ts_s]
 
 
