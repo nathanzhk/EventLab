@@ -5,7 +5,7 @@ from runtime.events import RuntimeStateEvent
 from .strategy import Strategy, StrategyOutput
 
 
-class StrategyEngine:
+class PredictionEngine:
     def __init__(self, strategy: Strategy) -> None:
         self._strategy = strategy
 

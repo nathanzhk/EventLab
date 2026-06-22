@@ -29,8 +29,8 @@ from execution.mock import (
     mock_trade_component,
 )
 from models import Market
-from prediction.component import strategy_component
-from prediction.engine import StrategyEngine
+from prediction.component import prediction_component
+from prediction.engine import PredictionEngine
 from prediction.strategy import Strategy
 from runtime.component import runtime_state_component
 
@@ -43,7 +43,7 @@ class RuntimeContext:
     market: Market
     crypto_quote_stream: AsyncIterable[CryptoQuoteEvent]
     market_quote_stream: AsyncIterable[MarketQuoteEvent]
-    strategy_engine: StrategyEngine
+    prediction_engine: PredictionEngine
     execution_engine: ExecutionEngine
     trade_stream: AsyncIterable[MarketOrderEvent | MarketTradeEvent]
 
@@ -86,7 +86,7 @@ class Runtime:
             market=market,
             crypto_quote_stream=CryptoQuoteStream(symbol=symbol, market=market),
             market_quote_stream=MarketQuoteStream(market),
-            strategy_engine=StrategyEngine(strategy),
+            prediction_engine=PredictionEngine(strategy),
             execution_engine=ExecutionEngine(
                 market,
                 maker_client,
@@ -111,7 +111,7 @@ class Runtime:
         self._component_factories.append(runtime_state_component())
         self._component_factories.append(crypto_quote_component())
         self._component_factories.append(market_quote_component())
-        self._component_factories.append(strategy_component())
+        self._component_factories.append(prediction_component())
         self._component_factories.append(execution_component())
         if self._execution_mode == "live":
             self._component_factories.append(live_trade_component())
