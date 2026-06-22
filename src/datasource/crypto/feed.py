@@ -54,6 +54,9 @@ class CryptoQuoteStream:
         ):
             self._base_price = round(quote.mid, 2)
 
+        if self._base_price is None:
+            return None
+
         return CryptoQuoteEvent(
             recv_ts_ms=quote.recv_ts_ms,
             curr_price=round(quote.mid, 2),
