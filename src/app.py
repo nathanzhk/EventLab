@@ -64,9 +64,11 @@ class Runtime:
         symbol: str,
         strategy: Strategy,
         execution_mode: ExecutionMode = "mock",
+        dashboard_enabled: bool = False,
     ) -> None:
         self._component_factories: list[ComponentFactory] = []
         self._execution_mode = execution_mode
+        self._dashboard_enabled = dashboard_enabled
         bus = EventBus()
         if execution_mode == "live":
             maker_client = MakerTradeClient()
@@ -104,8 +106,9 @@ class Runtime:
         await self._context.execution_engine.settle_market(outcome)
 
     def _register_components(self) -> None:
+        if self._dashboard_enabled:
+            self._component_factories.append(dashboard_component())
         self._component_factories.append(runtime_state_component())
-        self._component_factories.append(dashboard_component())
         self._component_factories.append(crypto_quote_component())
         self._component_factories.append(market_quote_component())
         self._component_factories.append(strategy_component())

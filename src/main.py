@@ -60,8 +60,9 @@ async def run(args: argparse.Namespace) -> None:
     if args.market_start_ts is not None:
         await run_worker(
             args.market_start_ts,
-            execution_mode=args.execution_mode,
             strategy_name=args.strategy,
+            execution_mode=args.execution_mode,
+            dashboard_enabled=args.dashboard,
         )
     else:
         async with asyncio.TaskGroup() as tasks:
@@ -72,8 +73,9 @@ async def run(args: argparse.Namespace) -> None:
                 )
             tasks.create_task(
                 run_supervisor(
-                    execution_mode=args.execution_mode,
                     strategy_name=args.strategy,
+                    execution_mode=args.execution_mode,
+                    dashboard_enabled=args.dashboard,
                 ),
                 name="supervisor",
             )
@@ -82,8 +84,9 @@ async def run(args: argparse.Namespace) -> None:
 async def run_worker(
     market_start_ts: int,
     *,
-    execution_mode: ExecutionMode,
     strategy_name: str,
+    execution_mode: ExecutionMode,
+    dashboard_enabled: bool,
 ) -> None:
     market = BTC5mMarket.from_start_ts(market_start_ts)
     set_log_file(market.slug)
@@ -96,6 +99,7 @@ async def run_worker(
         symbol="BTCUSDT",
         strategy=DefaultStrategy(),
         execution_mode=execution_mode,
+        dashboard_enabled=dashboard_enabled,
     )
     runtime_task = asyncio.create_task(
         runtime.run(),
@@ -146,8 +150,9 @@ async def _settle_market(runtime: Runtime, market: BTC5mMarket) -> None:
 
 async def run_supervisor(
     *,
-    execution_mode: ExecutionMode,
     strategy_name: str,
+    execution_mode: ExecutionMode,
+    dashboard_enabled: bool,
 ) -> None:
     set_log_file("supervisor")
     logger.info("start supervisor")
@@ -160,8 +165,9 @@ async def run_supervisor(
             running,
             watchers,
             BTC5mMarket.curr_market(),
-            execution_mode=execution_mode,
             strategy_name=strategy_name,
+            execution_mode=execution_mode,
+            dashboard_enabled=dashboard_enabled,
         )
         while True:
             next_market = BTC5mMarket.next_market()
@@ -170,8 +176,9 @@ async def run_supervisor(
                 running,
                 watchers,
                 next_market,
-                execution_mode=execution_mode,
                 strategy_name=strategy_name,
+                execution_mode=execution_mode,
+                dashboard_enabled=dashboard_enabled,
             )
             await sleep_until(next_market.start_ts_s)
     finally:
@@ -186,8 +193,9 @@ async def _create_worker(
     watchers: set[asyncio.Task],
     market: BTC5mMarket,
     *,
-    execution_mode: ExecutionMode,
     strategy_name: str,
+    execution_mode: ExecutionMode,
+    dashboard_enabled: bool,
 ) -> None:
     proc = running.get(market.start_ts_s)
     if proc is not None and proc.returncode is None:
@@ -203,6 +211,8 @@ async def _create_worker(
         "--strategy",
         strategy_name,
     ]
+    if dashboard_enabled:
+        cmd.append("--dashboard")
     proc = await asyncio.create_subprocess_exec(*cmd, cwd=Path(__file__).resolve().parents[1])
     running[market.start_ts_s] = proc
     logger.info("started worker pid=%s market=%s", proc.pid, market.slug)

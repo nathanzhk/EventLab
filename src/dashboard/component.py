@@ -37,13 +37,16 @@ class DashboardComponent:
             await asyncio.to_thread(self._forward_state, payload)
 
     def _forward_state(self, payload: bytes) -> None:
-        response = requests.post(
-            f"http://127.0.0.1:{DASHBOARD_PORT}/state",
-            data=payload,
-            headers={"content-type": "application/json"},
-            timeout=1,
-        )
-        response.raise_for_status()
+        try:
+            response = requests.post(
+                f"http://127.0.0.1:{DASHBOARD_PORT}/state",
+                data=payload,
+                headers={"content-type": "application/json"},
+                timeout=1,
+            )
+            response.raise_for_status()
+        except requests.RequestException as exc:
+            logger.debug("drop state forward to dashboard: %s", exc)
 
 
 def dashboard_component() -> ComponentFactory:
