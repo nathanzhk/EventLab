@@ -129,11 +129,7 @@ class ExecutionEngine:
             return
 
         if active_order.side != side:
-            await self._order_manager.cancel(
-                active_order.local_id,
-                active_order.order_id,
-                reason="target side changed",
-            )
+            await self._order_manager.cancel(active_order.order_id, reason="target side changed")
             return
 
         now = now_ts_ms()
@@ -157,11 +153,7 @@ class ExecutionEngine:
             shares,
             new_price,
         )
-        await self._order_manager.cancel(
-            active_order.local_id,
-            active_order.order_id,
-            reason=reason,
-        )
+        await self._order_manager.cancel(active_order.order_id, reason=reason)
 
 
 def _pick_price(desired: DesiredPositionEvent, side: Side, force: bool, shares: float) -> float:

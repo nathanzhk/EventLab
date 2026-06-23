@@ -1,15 +1,17 @@
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Any, Protocol
 
 from execution.events import MarketOrderEvent, MarketTradeEvent
 from models import Market, Token
 
 
 class TradeClient(Protocol):
-    def buy(self, token: Token, shares: float, price: float) -> str | None: ...
+    def create_buy_order(self, token: Token, shares: float, price: float) -> tuple[str, Any]: ...
 
-    def sell(self, token: Token, shares: float, price: float) -> str | None: ...
+    def create_sell_order(self, token: Token, shares: float, price: float) -> tuple[str, Any]: ...
+
+    def submit_order(self, order: Any) -> bool: ...
 
     def get_cash_balance(self) -> float: ...
 

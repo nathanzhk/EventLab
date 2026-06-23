@@ -7,7 +7,7 @@ from execution.events import MarketOrderEvent, MarketTradeEvent
 from models import Market, Token
 from utils.logger import get_logger
 
-from .store import MockOrderStore
+from .store import MockOrder, MockOrderStore
 
 
 class MockTradeClient:
@@ -20,23 +20,28 @@ class MockTradeClient:
     def warm_up(self, market: Market) -> None:
         self.logger.debug("warm up %s", market.slug)
 
-    def buy(self, token: Token, shares: float, price: float) -> str | None:
-        return self._store.add_order(
+    def create_buy_order(self, token: Token, shares: float, price: float) -> tuple[str, MockOrder]:
+        order = self._store.create_order(
             token=token,
             side=Side.BUY,
             role=self.role,
             shares=shares,
             price=price,
         )
+        return order.order_id, order
 
-    def sell(self, token: Token, shares: float, price: float) -> str | None:
-        return self._store.add_order(
+    def create_sell_order(self, token: Token, shares: float, price: float) -> tuple[str, MockOrder]:
+        order = self._store.create_order(
             token=token,
             side=Side.SELL,
             role=self.role,
             shares=shares,
             price=price,
         )
+        return order.order_id, order
+
+    def submit_order(self, order: MockOrder) -> bool:
+        return self._store.submit_order(order)
 
     def fee_rate(self, market: Market) -> float:
         if self.role == Role.MAKER:

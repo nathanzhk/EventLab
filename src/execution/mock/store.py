@@ -58,7 +58,7 @@ class MockOrderStore:
         self._latest_quotes: dict[str, MarketQuoteEvent] = {}
         self._pending_events: list[MarketOrderEvent | MarketTradeEvent] = []
 
-    def add_order(
+    def create_order(
         self,
         *,
         token: Token,
@@ -66,13 +66,10 @@ class MockOrderStore:
         role: Role,
         shares: float,
         price: float,
-    ) -> str | None:
-        if shares <= 0:
-            return None
-        order_id = uuid.uuid4().hex
+    ) -> MockOrder:
         now = now_ts_ms()
-        order = MockOrder(
-            order_id=order_id,
+        return MockOrder(
+            order_id=uuid.uuid4().hex,
             market_id=token.market_id,
             token_id=token.id,
             side=side,
@@ -84,9 +81,13 @@ class MockOrderStore:
             created_ts_ms=now,
             updated_ts_ms=now,
         )
+
+    def submit_order(self, order: MockOrder) -> bool:
+        if order.shares <= 0:
+            return False
         with self._lock:
-            self._orders[order_id] = order
-        return order_id
+            self._orders[order.order_id] = order
+        return True
 
     def cancel_order(self, order_id: str) -> tuple[bool, str]:
         with self._lock:

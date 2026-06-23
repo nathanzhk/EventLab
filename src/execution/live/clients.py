@@ -56,31 +56,33 @@ class LiveTradeClient:
         exchange_address = contract_config.exchange_v2
         return ExchangeOrderBuilderV2(exchange_address, chain_id, signer)
 
-    def buy(self, token: Token, shares: float, price: float) -> str | None:
-        self.logger.info("buy %s %.6f at $%.2f", token.key, shares, price)
-        try:
-            local_id, order = self._create_order(token=token, shares=shares, price=price, side=BUY)
-            self.logger.info("create order success %s", local_id)
-            order_id = self._submit_order(order)
-            self.logger.info("submit order success %s", order_id)
-            return order_id
-        except PolyApiException as e:
-            self.logger.debug("%r", e.error_msg)
-            self.logger.warning("submit order failed: %s", _error_message(e))
-            return None
+    def create_buy_order(
+        self, token: Token, shares: float, price: float
+    ) -> tuple[str, SignedOrderV2]:
+        self.logger.info("create buy order %s %.6f at $%.2f", token.key, shares, price)
+        order_id, order = self._create_order(token=token, shares=shares, price=price, side=BUY)
+        self.logger.info("create order success %s", order_id)
+        return order_id, order
 
-    def sell(self, token: Token, shares: float, price: float) -> str | None:
-        self.logger.info("sell %s %.6f at $%.2f", token.key, shares, price)
+    def create_sell_order(
+        self, token: Token, shares: float, price: float
+    ) -> tuple[str, SignedOrderV2]:
+        self.logger.info("create sell order %s %.6f at $%.2f", token.key, shares, price)
+        order_id, order = self._create_order(token=token, shares=shares, price=price, side=SELL)
+        self.logger.info("create order success %s", order_id)
+        return order_id, order
+
+    def submit_order(self, order: SignedOrderV2) -> bool:
         try:
-            local_id, order = self._create_order(token=token, shares=shares, price=price, side=SELL)
-            self.logger.info("create order success %s", local_id)
             order_id = self._submit_order(order)
-            self.logger.info("submit order success %s", order_id)
-            return order_id
         except PolyApiException as e:
             self.logger.debug("%r", e.error_msg)
             self.logger.warning("submit order failed: %s", _error_message(e))
-            return None
+            return False
+        if order_id is None:
+            return False
+        self.logger.info("submit order success %s", order_id)
+        return True
 
     def warm_up(self, market: Market):
         self._create_order(token=market.yes_token, shares=100, price=0.01, side=SELL)
