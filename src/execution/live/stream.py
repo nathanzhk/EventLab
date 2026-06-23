@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import AsyncIterator
+from decimal import Decimal
 from typing import Any
 
 import orjson
@@ -105,7 +106,7 @@ def build_order_event(message: dict, *, source: str) -> MarketOrderEvent | None:
             shares=round(float(message["original_size"]), 6),
             side=Side(str(message["side"]).upper()),
             type=MarketOrderType(str(message["order_type"]).upper()),
-            price=round(float(message["price"]), 3),
+            price=float(message["price"]),
             matched_shares=round(float(message["size_matched"]), 6),
         )
     except Exception:
@@ -121,7 +122,7 @@ def build_trade_event(message: dict, proxy_wallet: str, *, source: str) -> Marke
             order_id = message["taker_order_id"]
             shares = float(message["size"])
             side = Side(str(message["side"]).upper())
-            price = float(message["price"])
+            price = _overall_trade_price(message, shares)
         else:
             sub_order = _find_sub_order(message.get("maker_orders"), proxy_wallet)
             if sub_order is None:
@@ -142,10 +143,40 @@ def build_trade_event(message: dict, proxy_wallet: str, *, source: str) -> Marke
             shares=round(shares, 6),
             side=side,
             role=Role(str(message["trader_side"]).upper()),
-            price=round(price, 3),
+            price=price,
         )
     except Exception:
         return None
+
+
+def _overall_trade_price(message: dict, shares: float) -> float:
+    fallback_price = float(message["price"])
+    sub_orders = message.get("maker_orders")
+    if not isinstance(sub_orders, list) or not sub_orders or shares <= 0:
+        return fallback_price
+
+    token_id = str(message["asset_id"])
+    total_shares = Decimal("0")
+    total_amount = Decimal("0")
+    for sub_order in sub_orders:
+        if not isinstance(sub_order, dict):
+            return fallback_price
+        sub_shares = Decimal(str(sub_order["matched_amount"]))
+        sub_price = Decimal(str(sub_order["price"]))
+        if str(sub_order["asset_id"]) != token_id:
+            sub_price = Decimal("1") - sub_price
+        total_shares += sub_shares
+        total_amount += sub_shares * sub_price
+
+    overall_shares = Decimal(str(shares))
+    if abs(total_shares - overall_shares) > Decimal("0.000001"):
+        logger.warning(
+            "trade detail shares mismatch: overall=%.6f details=%.6f",
+            shares,
+            float(total_shares),
+        )
+        return fallback_price
+    return float(total_amount / overall_shares)
 
 
 def _find_sub_order(sub_orders: object, proxy_wallet: str) -> dict[str, Any] | None:
