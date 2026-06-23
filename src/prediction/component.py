@@ -33,9 +33,8 @@ class PredictionComponent:
     async def _prediction_loop(self, events: Subscription[RuntimeStateEvent]) -> None:
         async for runtime_state in events:
             try:
-                desired_position_events = await self._engine.evaluate(runtime_state)
-                for desired_position_event in desired_position_events:
-                    await self._bus.publish(desired_position_event)
+                desired_positions_event = await self._engine.evaluate(runtime_state)
+                await self._bus.publish(desired_positions_event)
             except Exception:
                 raise
 

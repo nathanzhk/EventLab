@@ -8,7 +8,7 @@ from bus import (
     OverflowPolicy,
     Subscription,
 )
-from prediction.events import DesiredPositionEvent
+from prediction.events import DesiredPositionsEvent
 
 from .engine import ExecutionEngine
 from .events import MarketOrderEvent, MarketTradeEvent
@@ -39,13 +39,13 @@ class ExecutionComponent:
         )
         tasks.create_task(self._market_trade_loop(market_trade_events))
 
-        desired_position_events = self._bus.subscribe(
-            DesiredPositionEvent,
-            name="execution.desired-position",
-            maxsize=20,
-            overflow=OverflowPolicy.BLOCK,
+        desired_positions_events = self._bus.subscribe(
+            DesiredPositionsEvent,
+            name="execution.desired-positions",
+            maxsize=1,
+            overflow=OverflowPolicy.DROP_OLDEST,
         )
-        tasks.create_task(self._desired_position_loop(desired_position_events))
+        tasks.create_task(self._desired_positions_loop(desired_positions_events))
 
     async def _market_order_loop(self, events: Subscription[MarketOrderEvent]) -> None:
         async for order in events:
@@ -55,9 +55,9 @@ class ExecutionComponent:
         async for trade in events:
             await self._engine.handle_trade_event(trade)
 
-    async def _desired_position_loop(self, targets: Subscription[DesiredPositionEvent]) -> None:
-        async for target in targets:
-            await self._engine.handle_desired_position(target)
+    async def _desired_positions_loop(self, events: Subscription[DesiredPositionsEvent]) -> None:
+        async for desired_positions in events:
+            await self._engine.handle_desired_positions(desired_positions)
 
 
 def execution_component() -> ComponentFactory:

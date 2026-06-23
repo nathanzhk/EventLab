@@ -4,7 +4,7 @@ import asyncio
 
 from enums import Side
 from models import Market
-from prediction.events import DesiredPositionEvent
+from prediction.events import DesiredPositionEvent, DesiredPositionsEvent
 from utils.logger import get_logger
 from utils.time import now_ts_ms
 
@@ -56,41 +56,45 @@ class ExecutionEngine:
         async with self._lock:
             await self._order_manager.settle_market(self._market, outcome)
 
-    async def handle_desired_position(self, desired_position: DesiredPositionEvent) -> None:
+    async def handle_desired_positions(self, desired_positions: DesiredPositionsEvent) -> None:
         async with self._lock:
-            current_position, active_order = await self._order_manager.get_position_by_token(
-                desired_position.market, desired_position.token
+            await self._handle_desired_position(desired_positions.up_signal)
+            await self._handle_desired_position(desired_positions.dn_signal)
+
+    async def _handle_desired_position(self, desired_position: DesiredPositionEvent) -> None:
+        current_position, active_order = await self._order_manager.get_position_by_token(
+            desired_position.market, desired_position.token
+        )
+
+        desired_shares = round(desired_position.shares, 6)
+        current_shares = current_position.effective_shares
+
+        if desired_shares > current_shares:
+            delta = round(desired_shares - current_shares, 6)
+            await self._reconcile_order(
+                desired_position,
+                side=Side.BUY,
+                shares=delta,
+                active_order=active_order,
             )
-
-            desired_shares = round(desired_position.shares, 6)
-            current_shares = current_position.effective_shares
-
-            if desired_shares > current_shares:
-                delta = round(desired_shares - current_shares, 6)
-                await self._reconcile_order(
-                    desired_position,
-                    side=Side.BUY,
-                    shares=delta,
-                    active_order=active_order,
-                )
-            elif desired_shares < current_shares:
-                delta = round(current_shares - desired_shares, 6)
-                sell_shares = delta
-                if active_order is None or active_order.side == Side.SELL:
-                    sell_shares = min(delta, current_position.sellable_shares)
-                await self._reconcile_order(
-                    desired_position,
-                    side=Side.SELL,
-                    shares=sell_shares,
-                    active_order=active_order,
-                )
-            elif active_order is not None:
-                await self._reconcile_order(
-                    desired_position,
-                    side=active_order.side,
-                    shares=active_order.off_chain_pending_shares,
-                    active_order=active_order,
-                )
+        elif desired_shares < current_shares:
+            delta = round(current_shares - desired_shares, 6)
+            sell_shares = delta
+            if active_order is None or active_order.side == Side.SELL:
+                sell_shares = min(delta, current_position.sellable_shares)
+            await self._reconcile_order(
+                desired_position,
+                side=Side.SELL,
+                shares=sell_shares,
+                active_order=active_order,
+            )
+        elif active_order is not None:
+            await self._reconcile_order(
+                desired_position,
+                side=active_order.side,
+                shares=active_order.off_chain_pending_shares,
+                active_order=active_order,
+            )
 
     async def _reconcile_order(
         self,
