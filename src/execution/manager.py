@@ -456,7 +456,10 @@ class OrderManager:
                 order.off_chain_invalid_shares = _ZERO
                 if order.off_chain_matched_shares == _ZERO:
                     order.status = ManagedOrderStatus.ZERO_MATCHED
-                elif order.off_chain_matched_shares < _MATCHED_SHARES_RATE * order.shares:
+                elif (
+                    order.off_chain_matched_shares < _MATCHED_SHARES_RATE * order.shares
+                    and order.off_chain_pending_shares > _POSITION_SHARES_DUST
+                ):
                     order.status = ManagedOrderStatus.PART_MATCHED
                 else:
                     order.status = ManagedOrderStatus.FULL_MATCHED
