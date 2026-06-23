@@ -17,7 +17,7 @@ class MarketQuoteEvent:
 
     @property
     def mid(self) -> float:
-        return round((self.best_bid + self.best_ask) / 2, 2)
+        return round((self.best_bid + self.best_ask) / 2, 3)
 
     @property
     def spreed(self) -> float:

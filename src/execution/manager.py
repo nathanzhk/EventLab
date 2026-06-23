@@ -36,7 +36,7 @@ class _Position:
     def avg_price(self) -> float:
         if self.shares <= _POSITION_SHARES_DUST:
             return _ZERO
-        return round(self.cost / self.shares, 3)
+        return self.cost / self.shares
 
 
 @dataclass(slots=True)

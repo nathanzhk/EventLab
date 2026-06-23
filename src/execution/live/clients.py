@@ -1,5 +1,5 @@
-import math
 import time
+from decimal import ROUND_DOWN, Decimal
 
 from py_clob_client_v2.client import ClobClient
 from py_clob_client_v2.clob_types import (
@@ -98,7 +98,11 @@ class LiveTradeClient:
         raise ValueError(f"invalid role: {self.role}")
 
     def calc_fee_amount(self, market: Market, shares: float, price: float) -> float:
-        return _truncate_decimal(shares * self.fee_rate(market) * price * (1 - price), 5)
+        return _calculate_fee_amount(
+            fee_rate=self.fee_rate(market),
+            shares=shares,
+            price=price,
+        )
 
     def get_cash_balance(self) -> float:
         params = BalanceAllowanceParams(
@@ -305,9 +309,12 @@ class TakerTradeClient(LiveTradeClient):
     order_type: OrderType = OrderType.FOK  # type: ignore
 
 
-def _truncate_decimal(x, digits):
-    factor = 10**digits
-    return math.trunc(x * factor) / factor
+def _calculate_fee_amount(*, fee_rate: float, shares: float, price: float) -> float:
+    decimal_fee_rate = Decimal(str(fee_rate))
+    decimal_shares = Decimal(str(shares))
+    decimal_price = Decimal(str(price))
+    fee = decimal_shares * decimal_fee_rate * decimal_price * (Decimal(1) - decimal_price)
+    return float(fee.quantize(Decimal("0.00001"), rounding=ROUND_DOWN))
 
 
 def _error_message(error: PolyApiException) -> str:
