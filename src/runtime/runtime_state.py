@@ -71,9 +71,6 @@ class RuntimeState:
         quote: MarketQuoteEvent,
     ) -> RuntimeStateEvent | None:
         async with self._lock:
-            if quote.market.id != self._market.id:
-                logger.debug("ignore quote for other market: %s", quote.market.id)
-                return None
             if quote.token.id == self._yes_token.id:
                 self._yes_quote = quote
             if quote.token.id == self._no_token.id:
@@ -108,9 +105,6 @@ class RuntimeState:
         self, position: CurrentPositionEvent
     ) -> RuntimeStateEvent | None:
         async with self._lock:
-            if position.market.id != self._market.id:
-                logger.debug("ignore position for other market: %s", position.market.id)
-                return None
             if position.token.id == self._yes_token.id:
                 self._yes_position = position
             elif position.token.id == self._no_token.id:

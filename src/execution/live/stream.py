@@ -18,7 +18,7 @@ from utils.time import now_ts_ms
 _RECONNECT_DELAY_S = 2
 _PING_INTERVAL_S = 10
 
-logger = get_logger("MARKET TRADE")
+logger = get_logger("LIVE TRADE")
 
 
 class LiveTradeStream:

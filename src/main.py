@@ -52,10 +52,8 @@ async def run(args: argparse.Namespace) -> None:
     Env.load()
     configure_logging()
 
-    bus_logger = get_logger("BUS")
-    bus_logger.setLevel(logging.INFO)
-    state_logger = get_logger("STATE")
-    state_logger.setLevel(logging.INFO)
+    for logger_name in ("BUS", "STATE", "LIVE TRADE"):
+        get_logger(logger_name).setLevel(logging.INFO)
 
     if args.market_start_ts is not None:
         await run_worker(
