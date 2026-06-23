@@ -93,10 +93,6 @@ class ManagedOrder:
     def on_chain_failure_shares(self) -> float:
         return round(sum(trade.on_chain_failure_shares for trade in self.trades.values()), 6)
 
-    @property
-    def on_chain_takefee_shares(self) -> float:
-        return round(sum(trade.on_chain_takefee_shares for trade in self.trades.values()), 6)
-
     def log(self, message: str) -> None:
         self.audit_records.append((now_ts_ms(), message))
 
@@ -121,7 +117,6 @@ class ManagedTrade:
     on_chain_pending_shares: float = 0.0
     on_chain_settled_shares: float = 0.0
     on_chain_failure_shares: float = 0.0
-    on_chain_takefee_shares: float = 0.0
 
 
 class OrderManager:
@@ -504,42 +499,40 @@ class OrderManager:
                     on_chain_pending_shares=_ZERO,
                     on_chain_settled_shares=_ZERO,
                     on_chain_failure_shares=_ZERO,
-                    on_chain_takefee_shares=_ZERO,
                 )
 
             prev_status = trade.status
             trade.updated_ts_ms = max(trade.updated_ts_ms, event.exch_ts_ms)
 
-            if event.role == Role.TAKER and event.side == Side.BUY:
-                net_shares, fee_shares = self._taker_client.calc_net_buy_shares(
+            settled_shares = event.shares
+            gross_amount = round(event.shares * event.price, 6)
+            if event.role == Role.TAKER:
+                fee_amount = self._taker_client.calc_fee_amount(
                     order.market, event.shares, event.price
                 )
             else:
-                net_shares, fee_shares = event.shares, _ZERO
+                fee_amount = _ZERO
 
-            if event.role == Role.TAKER and event.side == Side.SELL:
-                net_amount, fee_amount = self._taker_client.calc_net_sell_amount(
-                    order.market, event.shares, event.price
-                )
+            if event.side == Side.BUY:
+                cash_amount = round(gross_amount + fee_amount, 6)
             else:
-                net_amount, fee_amount = round(event.shares * event.price, 6), _ZERO
+                cash_amount = round(gross_amount - fee_amount, 6)
 
             if event.is_success:
                 trade.status = ManagedTradeStatus.SUCCESS
                 trade.on_chain_pending_shares = _ZERO
-                trade.on_chain_settled_shares = net_shares
+                trade.on_chain_settled_shares = settled_shares
                 trade.on_chain_failure_shares = _ZERO
             elif event.status == MarketTradeStatus.FAILED:
                 trade.status = ManagedTradeStatus.FAILURE
                 trade.on_chain_pending_shares = _ZERO
                 trade.on_chain_settled_shares = _ZERO
-                trade.on_chain_failure_shares = net_shares
+                trade.on_chain_failure_shares = settled_shares
             else:
                 trade.status = ManagedTradeStatus.PENDING
-                trade.on_chain_pending_shares = net_shares
+                trade.on_chain_pending_shares = settled_shares
                 trade.on_chain_settled_shares = _ZERO
                 trade.on_chain_failure_shares = _ZERO
-            trade.on_chain_takefee_shares = fee_shares
 
             order.trades[event.trade_id] = trade
             self._trades_by_trade_id[event.trade_id] = trade
@@ -551,7 +544,7 @@ class OrderManager:
                 position = self._positions_by_token_id.get(trade.token_id)
                 realized_pnl = position.realized_pnl if position is not None else _ZERO
 
-                self._apply_confirmed_trade(trade.side, trade.token_id, net_amount, net_shares)
+                self._apply_confirmed_trade(trade.side, trade.token_id, cash_amount, settled_shares)
 
                 position = self._positions_by_token_id[event.token_id]
                 pnl = position.realized_pnl - realized_pnl if event.side == Side.SELL else None
@@ -562,9 +555,9 @@ class OrderManager:
                         market_end_ms=order.market.end_ts_ms,
                         side=event.side,
                         token=order.token.key,
-                        shares=net_shares,
-                        price=(net_amount / net_shares),
-                        amount=net_amount,
+                        shares=settled_shares,
+                        price=(cash_amount / settled_shares),
+                        amount=cash_amount,
                         pnl=pnl,
                     ),
                     name=f"notification-{event.trade_id}",
@@ -572,13 +565,13 @@ class OrderManager:
 
         await self._publish_current_position_event(order.market, order.token)
         logger.debug(
-            "trade %s status=%s net_shares=%.6f fee_shares=%.6f net_amount=%.6f fee_amount=%.6f",
+            "trade %s status=%s shares=%.6f gross_amount=%.6f fee_amount=%.6f cash_amount=%.6f",
             trade.trade_id,
             trade.status,
-            net_shares,
-            fee_shares,
-            net_amount,
+            settled_shares,
+            gross_amount,
             fee_amount,
+            cash_amount,
         )
 
     def _apply_confirmed_trade(
@@ -615,7 +608,6 @@ class OrderManager:
                 order.off_chain_matched_shares
                 - order.on_chain_settled_shares
                 - order.on_chain_failure_shares
-                - order.on_chain_takefee_shares
             )
             if order.side == Side.BUY:
                 opening_shares += order.off_chain_pending_shares

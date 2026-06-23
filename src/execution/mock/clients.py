@@ -50,20 +50,8 @@ class MockTradeClient:
             return market.fee_rate
         raise ValueError(f"invalid role: {self.role}")
 
-    def calc_fee(self, market: Market, shares: float, price: float) -> float:
-        return round(self.fee_rate(market) * shares * price * (1 - price), 6)
-
-    def calc_net_buy_shares(
-        self, market: Market, shares: float, price: float
-    ) -> tuple[float, float]:
-        fee_shares = _truncate_decimal(shares * self.fee_rate(market) * (1 - price), 5)
-        return round(shares - fee_shares, 6), fee_shares
-
-    def calc_net_sell_amount(
-        self, market: Market, shares: float, price: float
-    ) -> tuple[float, float]:
-        fee_amount = _truncate_decimal(shares * price * self.fee_rate(market) * (1 - price), 5)
-        return round(shares * price - fee_amount, 6), fee_amount
+    def calc_fee_amount(self, market: Market, shares: float, price: float) -> float:
+        return _truncate_decimal(shares * price * self.fee_rate(market) * (1 - price), 5)
 
     def get_cash_balance(self) -> float:
         return 100_000.0
