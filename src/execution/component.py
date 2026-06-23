@@ -25,7 +25,7 @@ class ExecutionComponent:
     def start(self, tasks: asyncio.TaskGroup) -> None:
         market_order_events = self._bus.subscribe(
             MarketOrderEvent,
-            name="execution-engine.market-order",
+            name="execution.market-order",
             maxsize=1000,
             overflow=OverflowPolicy.BLOCK,
         )
@@ -33,7 +33,7 @@ class ExecutionComponent:
 
         market_trade_events = self._bus.subscribe(
             MarketTradeEvent,
-            name="execution-engine.market-trade",
+            name="execution.market-trade",
             maxsize=1000,
             overflow=OverflowPolicy.BLOCK,
         )
@@ -41,7 +41,7 @@ class ExecutionComponent:
 
         desired_position_events = self._bus.subscribe(
             DesiredPositionEvent,
-            name="execution-engine.desired-position",
+            name="execution.desired-position",
             maxsize=20,
             overflow=OverflowPolicy.BLOCK,
         )

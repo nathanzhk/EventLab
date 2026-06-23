@@ -24,7 +24,7 @@ class PredictionComponent:
     def start(self, tasks: asyncio.TaskGroup) -> None:
         runtime_state_events = self._bus.subscribe(
             RuntimeStateEvent,
-            name="prediction-engine.runtime-state",
+            name="prediction.runtime-state",
             maxsize=1,
             overflow=OverflowPolicy.DROP_OLDEST,
         )

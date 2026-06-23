@@ -597,7 +597,7 @@ class OrderManager:
                         amount=net_amount,
                         pnl=pnl,
                     ),
-                    name=f"send-trade-{event.trade_id}",
+                    name=f"notification-{event.trade_id}",
                 )
 
         await self._publish_current_position_event(order.market, order.token)

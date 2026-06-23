@@ -69,7 +69,7 @@ async def run(args: argparse.Namespace) -> None:
             if args.dashboard:
                 tasks.create_task(
                     serve_dashboard(),
-                    name="dashboard-server",
+                    name="dashboard",
                 )
             tasks.create_task(
                 run_supervisor(
